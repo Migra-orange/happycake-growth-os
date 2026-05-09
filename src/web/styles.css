@@ -233,3 +233,24 @@ main { min-height: 100vh; overflow: hidden; }
 .queueItem em { display:block; margin-top: 6px; font-weight: 800; color: var(--sky-dark); }
 @media (max-width: 980px) { .autopilotTimeline { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .autopilotTimeline { grid-template-columns: 1fr; } .queueItem div { align-items:flex-start; flex-direction:column; } }
+
+.queueActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.queueActions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: #16110f;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.queueActions button.danger {
+  background: #b43b3b;
+}

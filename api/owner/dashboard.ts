@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { approvalExpiresIn, createEmptyApprovalStore, listActiveApprovals, seedDemoApprovals, type ApprovalStore } from '../../src/server/autopilot/approval-store';
 
 type Json = Record<string, unknown>;
 
@@ -42,30 +43,32 @@ const autopilotTimeline = [
   { type: 'retention_loop', label: 'Retention loop', summary: 'After fulfillment: review request, repeat-order reminder, and office occasion memory.', status: 'scheduled' }
 ];
 
-const approvalQueue = [
-  {
-    approvalId: 'queue_live_owner_001',
-    intentId: 'intent_pending_honey_office',
-    customer: 'Website customer',
-    status: 'pending',
-    riskFlags: ['same_day'],
-    policyDecision: 'require_owner_approval',
-    summary: 'cake "Honey" for today after work. Side effects blocked until owner approval.',
-    proposedSideEffects: ['square_create_order', 'kitchen_create_ticket'],
-    expiresIn: '2h 58m'
-  },
-  {
-    approvalId: 'queue_retention_002',
-    intentId: 'intent_comeback_card',
-    customer: 'Previous office buyer',
-    status: 'scheduled',
-    riskFlags: [],
-    policyDecision: 'allow_followup',
-    summary: 'Retention agent will send a comeback reminder for the next office birthday.',
-    proposedSideEffects: ['schedule_followup'],
-    expiresIn: 'tomorrow'
+type GlobalWithApprovalStore = typeof globalThis & { __happycakeApprovalStore?: ApprovalStore };
+
+function getApprovalStore() {
+  const globalStore = globalThis as GlobalWithApprovalStore;
+  if (!globalStore.__happycakeApprovalStore) {
+    globalStore.__happycakeApprovalStore = seedDemoApprovals(createEmptyApprovalStore());
   }
-];
+  return globalStore.__happycakeApprovalStore;
+}
+
+function queueForDashboard() {
+  return listActiveApprovals(getApprovalStore()).map((item) => ({
+    approvalId: item.approvalId,
+    intentId: item.intentId,
+    customer: item.customer,
+    status: item.status,
+    riskFlags: item.riskFlags,
+    policyDecision: item.policyDecision,
+    summary: item.summary,
+    proposedSideEffects: item.proposedSideEffects,
+    expiresIn: approvalExpiresIn(item),
+    decisionAt: item.decisionAt,
+    decisionSource: item.decisionSource,
+    executedSideEffects: item.executedSideEffects
+  }));
+}
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
@@ -75,6 +78,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       callMcp('evaluator_get_evidence_summary', { dashboard: true })
     ]);
     const live = checks.every(c => c.ok && c.source === 'mcp');
+    const approvalQueue = queueForDashboard();
     return res.status(200).json({
       ok: true,
       mode: live ? 'live' : 'simulated',
@@ -110,6 +114,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         { name: 'cake "Milk Maiden"', orders: 2, revenueUsd: 78 }
       ],
       mcpChecks: checks,
+      storageMode: 'server_memory',
       autopilotTimeline,
       approvalQueue,
       agents: [

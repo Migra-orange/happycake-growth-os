@@ -1,4 +1,34 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { approveRecord, createEmptyApprovalStore, findApproval, rejectRecord, seedDemoApprovals, upsertApprovalRecord, type ApprovalStore } from '../../src/server/autopilot/approval-store';
+
+
+type GlobalWithApprovalStore = typeof globalThis & { __happycakeApprovalStore?: ApprovalStore };
+function getApprovalStore() {
+  const globalStore = globalThis as GlobalWithApprovalStore;
+  if (!globalStore.__happycakeApprovalStore) {
+    globalStore.__happycakeApprovalStore = seedDemoApprovals(createEmptyApprovalStore());
+  }
+  return globalStore.__happycakeApprovalStore;
+}
+
+function ensureApprovalRecord(body: any, intentId: string) {
+  const approvalId = String(body?.approvalId || intentId);
+  const store = getApprovalStore();
+  const found = findApproval(store, approvalId) || findApproval(store, intentId);
+  if (found) return found;
+  return upsertApprovalRecord(store, {
+    approvalId,
+    intentId,
+    customer: String(body?.customer || 'Website customer'),
+    status: 'pending',
+    summary: String(body?.note || 'Owner approval required before POS/kitchen handoff.'),
+    riskFlags: Array.isArray(body?.riskFlags) ? body.riskFlags.map(String) : [],
+    policyDecision: 'require_owner_approval',
+    proposedSideEffects: ['square_create_order', 'kitchen_create_ticket'],
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString()
+  });
+}
 
 const endpoint = process.env.HAPPYCAKE_MCP_URL || 'https://www.steppebusinessclub.com/api/mcp';
 
@@ -47,13 +77,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const rejected = action.includes('reject');
 
   try {
+    const approval = ensureApprovalRecord(req.body, intentId);
     const mcpCalls = rejected
-      ? [await callMcp('marketing_report_to_owner', { intentId, action: 'rejected', note: req.body?.note || '' })]
+      ? [await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'rejected', note: req.body?.note || '' })]
       : [
-        await callMcp('marketing_report_to_owner', { intentId, action: 'approved', note: req.body?.note || '' }),
-        await callMcp('square_create_order', { intentId, approvedBy: 'owner_telegram' }),
-        await callMcp('kitchen_create_ticket', { intentId, approvedBy: 'owner_telegram' })
+        await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'approved', note: req.body?.note || '' }),
+        await callMcp('square_create_order', { intentId, approvalId: approval.approvalId, approvedBy: 'owner_telegram' }),
+        await callMcp('kitchen_create_ticket', { intentId, approvalId: approval.approvalId, approvedBy: 'owner_telegram' })
       ];
+    const decidedApproval = rejected
+      ? rejectRecord(getApprovalStore(), approval.approvalId, String(req.body?.note || ''), 'telegram')
+      : approveRecord(getApprovalStore(), approval.approvalId, mcpCalls.map((call) => call.tool), 'telegram');
 
     return res.status(200).json({
       ok: true,
@@ -61,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? `Owner rejected ${intentId}. Customer promise remains blocked.`
         : `Order handoff ${intentId} approved in Telegram. Sandbox POS/kitchen actions may proceed.`,
       evidenceId: `owner_${Date.now().toString(36)}`,
+      approval: decidedApproval,
       mcpCalls
     });
   } catch {

@@ -1,4 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createEmptyApprovalStore, seedDemoApprovals, upsertApprovalRecord, type ApprovalStore } from '../src/server/autopilot/approval-store';
+
+
+type GlobalWithApprovalStore = typeof globalThis & { __happycakeApprovalStore?: ApprovalStore };
+function getApprovalStore() {
+  const globalStore = globalThis as GlobalWithApprovalStore;
+  if (!globalStore.__happycakeApprovalStore) {
+    globalStore.__happycakeApprovalStore = seedDemoApprovals(createEmptyApprovalStore());
+  }
+  return globalStore.__happycakeApprovalStore;
+}
 
 const guardrails = [
   'English only for customer-facing copy.',
@@ -106,6 +117,19 @@ async function runFlow(body: any) {
     callMcp('evaluator_get_evidence_summary', { evidenceId, intentId, scenario: 'website_assistant_flow' })
   ]);
   await callMcp('marketing_report_to_owner', { evidenceId, intentId, scenario: 'website_assistant_flow', mcpSources: mcpChecks.map((c) => c.source) });
+  const createdAt = new Date().toISOString();
+  const approvalRecord = upsertApprovalRecord(getApprovalStore(), {
+    approvalId,
+    intentId,
+    customer: name || 'Website customer',
+    status: 'pending',
+    summary: `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Owner approval required before POS/kitchen handoff.`,
+    riskFlags,
+    policyDecision: 'require_owner_approval',
+    proposedSideEffects: ['square_create_order', 'kitchen_create_ticket'],
+    createdAt,
+    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString()
+  });
 
   const sourceSummary = mcpChecks.every((c) => c.source === 'mcp') ? 'real Steppe MCP' : 'safe simulator fallback';
   const actions = requiredEvents.flatMap((type) => type === 'mcp_tool_called'
@@ -126,7 +150,7 @@ async function runFlow(body: any) {
     actions,
     orderIntent: { intentId, state: 'customer_reply_sent', channel, customerName: name, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: message, riskFlags, requiredFieldsMissing: missing },
     mcpChecks,
-    requiredApprovals: [{ approvalId, intentId, status: 'pending', ownerChannel: 'telegram', summary: 'Owner approves POS/kitchen side effects in Telegram.', sideEffectsIfApproved: ['square_create_order', 'kitchen_create_ticket', 'send customer reply'] }],
+    requiredApprovals: [{ approvalId: approvalRecord.approvalId, intentId, status: approvalRecord.status, ownerChannel: 'telegram', summary: approvalRecord.summary, sideEffectsIfApproved: ['square_create_order', 'kitchen_create_ticket', 'send customer reply'] }],
     riskFlags
   };
 }

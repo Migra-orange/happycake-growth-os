@@ -5,10 +5,10 @@ type Product = { id:string; name:string; shortName:string; priceUsd:number; weig
 type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
 type Offer = { label:string; value:string; code:string; angle:string };
-type Dashboard = { ok:boolean; mode:string; updatedAt:string; metrics:Record<string, number>; funnel:{label:string;value:number}[]; channels:{label:string;orders:number;revenueUsd:number}[]; topProducts:{name:string;orders:number;revenueUsd:number}[]; mcpChecks:{ok:boolean;source:string;tool:string;latencyMs:number}[]; agents:AgentConfig[]; autopilotTimeline?:AutopilotEvent[]; approvalQueue?:ApprovalQueueItem[] };
+type Dashboard = { ok:boolean; mode:string; updatedAt:string; storageMode?:string; metrics:Record<string, number>; funnel:{label:string;value:number}[]; channels:{label:string;orders:number;revenueUsd:number}[]; topProducts:{name:string;orders:number;revenueUsd:number}[]; mcpChecks:{ok:boolean;source:string;tool:string;latencyMs:number}[]; agents:AgentConfig[]; autopilotTimeline?:AutopilotEvent[]; approvalQueue?:ApprovalQueueItem[] };
 type AgentConfig = { id:string; name:string; enabled:boolean; mode:string; tone:string; dailyLimit:number; goal:string };
 type AutopilotEvent = { type:string; label:string; summary:string; status:string };
-type ApprovalQueueItem = { approvalId:string; intentId:string; customer:string; status:string; riskFlags:string[]; policyDecision:string; summary:string; proposedSideEffects:string[]; expiresIn:string };
+type ApprovalQueueItem = { approvalId:string; intentId:string; customer:string; status:string; riskFlags:string[]; policyDecision:string; summary:string; proposedSideEffects:string[]; expiresIn:string; decisionAt?:string; decisionSource?:string; executedSideEffects?:string[] };
 
 const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
@@ -57,17 +57,23 @@ export default function App() {
   useEffect(() => {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
     fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth).catch(() => {});
-    fetch(`${API}/api/owner/dashboard`).then(r => r.json()).then((d:Dashboard) => {
-      const saved = localStorage.getItem('happycake-agent-config');
-      const agents = saved ? JSON.parse(saved) : d.agents;
-      setDashboard(d);
-      setAgentDrafts(agents);
-    }).catch(() => {});
+    refreshDashboard();
     const seen = localStorage.getItem('happycake-offer-seen');
     const ownerRoute = window.location.hash === '#owner' || window.location.search.includes('owner=1');
     const timer = window.setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }, 850);
     return () => window.clearTimeout(timer);
   }, []);
+
+
+  async function refreshDashboard() {
+    try {
+      const d:Dashboard = await fetch(`${API}/api/owner/dashboard`).then(r => r.json());
+      const saved = localStorage.getItem('happycake-agent-config');
+      const agents = saved ? JSON.parse(saved) : d.agents;
+      setDashboard(d);
+      setAgentDrafts(agents);
+    } catch {}
+  }
 
   const featured = products[1] || products[0];
 
@@ -100,15 +106,46 @@ export default function App() {
     setLoading(true);
     setOwnerResult('');
     const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: offer?.code }) });
-    setResult(await res.json());
+    const data = await res.json();
+    setResult(data);
+    if (data?.requiredApprovals?.[0]) {
+      const approval = data.requiredApprovals[0];
+      setDashboard(current => current ? {
+        ...current,
+        approvalQueue: [
+          {
+            approvalId: approval.approvalId,
+            intentId: approval.intentId,
+            customer: data.orderIntent?.customerName || 'Website customer',
+            status: approval.status,
+            riskFlags: data.riskFlags || [],
+            policyDecision: 'require_owner_approval',
+            summary: approval.summary,
+            proposedSideEffects: approval.sideEffectsIfApproved || [],
+            expiresIn: '3h'
+          },
+          ...(current.approvalQueue || []).filter(item => item.approvalId !== approval.approvalId)
+        ],
+        metrics: { ...current.metrics, pendingApprovals: (current.metrics.pendingApprovals || 0) + 1 }
+      } : current);
+    }
     setShowTrail(false);
     setLoading(false);
   }
 
-  async function ownerApprove(action: 'approve_order_handoff' | 'reject_campaign') {
-    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, intentId: result?.orderIntent?.intentId, approvalId: result?.requiredApprovals?.[0]?.approvalId, campaignId: 'shop-offer', note: result?.ownerSummary || 'Owner reviewed order.' }) });
+  async function ownerApprove(action: 'approve_order_handoff' | 'reject_campaign', queueItem?: ApprovalQueueItem) {
+    const approvalId = queueItem?.approvalId || result?.requiredApprovals?.[0]?.approvalId;
+    const intentId = queueItem?.intentId || result?.orderIntent?.intentId;
+    const note = queueItem?.summary || result?.ownerSummary || 'Owner reviewed order.';
+    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, intentId, approvalId, campaignId: 'shop-offer', note }) });
     const data = await res.json();
     setOwnerResult(data.reply || JSON.stringify(data));
+    if (data?.approval && approvalId) {
+      setDashboard(current => current ? {
+        ...current,
+        approvalQueue: (current.approvalQueue || []).map(item => item.approvalId === approvalId ? { ...item, status: data.approval.status, decisionAt: data.approval.decisionAt, decisionSource: data.approval.decisionSource, executedSideEffects: data.approval.executedSideEffects || [] } : item)
+      } : current);
+    }
   }
 
   function updateAgent(id: string, patch: Partial<AgentConfig>) {
@@ -220,7 +257,7 @@ export default function App() {
         <div className="modelCard liveCard">
           <small>{dashboard?.mode === 'live' ? 'Live sandbox connected' : 'Dashboard loading'}</small>
           <b>{dashboard ? `${dashboard.mcpChecks.filter(c => c.ok).length}/${dashboard.mcpChecks.length} checks green` : 'Checking MCP'}</b>
-          <span>{dashboard?.updatedAt ? `Updated ${new Date(dashboard.updatedAt).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}` : 'Reading owner stats and agent defaults.'}</span>
+          <span>{dashboard?.updatedAt ? `Updated ${new Date(dashboard.updatedAt).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} · ${dashboard.storageMode || 'live api'}` : 'Reading owner stats and agent defaults.'}</span>
         </div>
       </section>
 
@@ -249,6 +286,8 @@ export default function App() {
                 <p>{item.summary}</p>
                 <small>{item.policyDecision} · risks: {item.riskFlags.join(', ') || 'none'}</small>
                 <em>{item.proposedSideEffects.join(' → ')}</em>
+                {item.executedSideEffects?.length ? <small>Executed: {item.executedSideEffects.join(' → ')}</small> : null}
+                {item.status === 'pending' && <div className="queueActions"><button onClick={() => ownerApprove('approve_order_handoff', item)}>Approve</button><button className="danger" onClick={() => ownerApprove('reject_campaign', item)}>Reject</button></div>}
               </article>)}
             </div>
             {result ? <div className="approvalCard"><b>{result.orderIntent?.customerName || 'Customer'} · {result.orderIntent?.channel}</b><p>{result.ownerSummary}</p><div className="approvalMeta"><span>Missing: {result.orderIntent?.requiredFieldsMissing?.join(', ') || 'none'}</span><span>Risks: {result.riskFlags?.join(', ') || 'none'}</span></div><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Approve handoff</button><button className="secondary" onClick={() => setShowTrail(true)}>Open proof</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Reject</button></div></div> : <div className="emptyState"><b>Autopilot queue is live.</b><p>Send an order from the shop to create a fresh owner approval card here.</p><button onClick={() => setView('shop')}>Open shop</button></div>}
