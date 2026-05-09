@@ -71,7 +71,7 @@ export async function runSandboxVerticalSlice(input: SliceInput) {
   }
 
   const customerReply = customerReplyForIntent(intent);
-  const sendTool = lead.channel === 'instagram' ? 'instagram_send_reply' : lead.channel === 'whatsapp' ? 'whatsapp_send_reply' : 'website_send_reply';
+  const sendTool = lead.channel === 'instagram' ? 'marketing_report_to_owner' : lead.channel === 'whatsapp' ? 'marketing_report_to_owner' : 'website_send_reply';
   const sendResult = await callMcp(sendTool, { threadId: lead.threadId, reply: customerReply, dryRun: lead.channel !== 'website' }, { demoRunId, channel: lead.channel, entityId: intent.intentId });
   intent.state = 'customer_reply_sent';
   appendEvidence({
@@ -82,7 +82,7 @@ export async function runSandboxVerticalSlice(input: SliceInput) {
     summary: `Customer reply sent via ${sendTool}.`,
     data: { customerReply, sendResult }
   });
-  await callMcp('evaluator_record_event', { scenario: 'lead_to_order_handoff', demoRunId, ok: true }, { demoRunId, channel: 'demo', entityId: intent.intentId });
+  await callMcp('evaluator_get_evidence_summary', { scenario: 'lead_to_order_handoff', demoRunId, ok: true }, { demoRunId, channel: 'demo', entityId: intent.intentId });
 
   const events = readEvidenceRun(demoRunId);
   const mcpSources = events

@@ -29,8 +29,8 @@ app.get('/api/mcp/smoke', async (_req, res) => {
   const results = await Promise.all([
     callMcp('square_list_catalog', { smoke: true }, { demoRunId, channel: 'demo' }),
     callMcp('kitchen_get_production_summary', { smoke: true }, { demoRunId, channel: 'demo' }),
-    callMcp('business_get_policies', { smoke: true }, { demoRunId, channel: 'demo' }),
-    callMcp('evaluator_get_summary', { smoke: true }, { demoRunId, channel: 'demo' })
+    callMcp('square_get_pos_summary', { smoke: true }, { demoRunId, channel: 'demo' }),
+    callMcp('evaluator_get_evidence_summary', { smoke: true }, { demoRunId, channel: 'demo' })
   ]);
   res.json({ ok: results.every((r) => r.ok), demoRunId, results });
 });

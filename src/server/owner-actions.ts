@@ -12,7 +12,7 @@ export async function handleOwnerAction(req: OwnerActionRequest) {
   if (req.action === 'daily_digest') {
     return {
       reply: 'Today: focus on same-day classics, reply to DMs under 5 minutes, ask every happy pickup for a Google review.',
-      mcp: await callMcp('marketing_daily_report', { scope: 'happycake_growth_os' })
+      mcp: await callMcp('marketing_report_to_owner', { scope: 'happycake_growth_os', reportType: 'daily_digest' })
     };
   }
   if (req.action === 'approve_campaign') {
@@ -24,14 +24,14 @@ export async function handleOwnerAction(req: OwnerActionRequest) {
   if (req.action === 'approve_order_handoff') {
     return {
       reply: `Order handoff ${req.intentId || req.approvalId || 'draft'} approved in Telegram. Sandbox POS/kitchen actions may proceed.`,
-      mcp: await callMcp('owner_action_log', { ...req, approvedByOwner: true, sideEffects: ['square_create_order', 'kitchen_create_ticket'] })
+      mcp: await callMcp('marketing_report_to_owner', { ...req, approvedByOwner: true, sideEffects: ['square_create_order', 'kitchen_create_ticket'] })
     };
   }
   if (req.action === 'approve_post') {
     return {
       reply: 'Post approved. Publish only after platform/source-of-truth check.',
-      mcp: await callMcp('google_business_create_post', { approvedByOwner: true, note: req.note })
+      mcp: await callMcp('marketing_report_to_owner', { approvedByOwner: true, note: req.note, action: 'approve_post' })
     };
   }
-  return { reply: 'Owner action recorded. Human review remains required before customer promise.', mcp: await callMcp('owner_action_log', req) };
+  return { reply: 'Owner action recorded. Human review remains required before customer promise.', mcp: await callMcp('marketing_report_to_owner', req) };
 }

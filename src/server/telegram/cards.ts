@@ -15,7 +15,7 @@ export function buildOwnerApproval(intent: OrderIntent, mcpEvidenceSummary: stri
 }
 
 export async function requestOwnerApproval(approval: OwnerApproval, demoRunId: string, channel = 'telegram') {
-  const mcp = await callMcp('owner_action_log', { approval, status: 'pending' }, { demoRunId, channel, entityId: approval.approvalId });
+  const mcp = await callMcp('marketing_report_to_owner', { approval, status: 'pending' }, { demoRunId, channel, entityId: approval.approvalId });
   appendEvidence({
     demo_run_id: demoRunId,
     type: 'owner_approval_requested',
@@ -29,7 +29,7 @@ export async function requestOwnerApproval(approval: OwnerApproval, demoRunId: s
 
 export async function approveOwnerAction(approval: OwnerApproval, demoRunId: string) {
   const approved: OwnerApproval = { ...approval, status: 'approved' };
-  const mcp = await callMcp('owner_action_log', { approval: approved, status: 'approved' }, { demoRunId, channel: 'telegram', entityId: approval.approvalId });
+  const mcp = await callMcp('marketing_report_to_owner', { approval: approved, status: 'approved' }, { demoRunId, channel: 'telegram', entityId: approval.approvalId });
   appendEvidence({
     demo_run_id: demoRunId,
     type: 'owner_approved',

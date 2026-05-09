@@ -7,11 +7,9 @@ export async function runSourceChecks(intent: OrderIntent, options: HandoffOptio
   const urgency = intent.riskFlags.includes('same_day') ? 'same_day' : 'standard';
   const checks = await Promise.all([
     callMcp('square_list_catalog', { intentId: intent.intentId, product: intent.productPreference }, { ...options, entityId: intent.intentId }),
-    callMcp('square_check_inventory', { intentId: intent.intentId, product: intent.productPreference, sku: 'HC-HONEY-12' }, { ...options, entityId: intent.intentId }),
-    callMcp('business_get_hours', { intentId: intent.intentId, pickupWindow: intent.pickupWindow }, { ...options, entityId: intent.intentId }),
-    callMcp('business_get_policies', { intentId: intent.intentId, risks: intent.riskFlags }, { ...options, entityId: intent.intentId }),
-    callMcp('business_get_allergens', { intentId: intent.intentId, product: intent.productPreference }, { ...options, entityId: intent.intentId }),
-    callMcp('kitchen_get_production_summary', { intentId: intent.intentId, urgency }, { ...options, entityId: intent.intentId })
+    callMcp('square_get_pos_summary', { intentId: intent.intentId, product: intent.productPreference }, { ...options, entityId: intent.intentId }),
+    callMcp('kitchen_get_production_summary', { intentId: intent.intentId, urgency }, { ...options, entityId: intent.intentId }),
+    callMcp('evaluator_get_evidence_summary', { intentId: intent.intentId }, { ...options, entityId: intent.intentId })
   ]);
   intent.state = 'source_checked';
   return checks;

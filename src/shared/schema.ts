@@ -22,25 +22,25 @@ export const ActionSchema = z.object({ type: z.string(), label: z.string(), deta
 export const McpSourceSchema = z.enum(['mcp', 'simulated']);
 export const McpToolNameSchema = z.enum([
   'square_list_catalog',
-  'square_check_inventory',
-  'business_get_hours',
-  'business_get_policies',
-  'business_get_allergens',
+  'square_create_order',
+  'square_update_order_status',
+  'square_get_pos_summary',
   'kitchen_get_production_summary',
   'kitchen_create_ticket',
   'kitchen_accept_ticket',
-  'kitchen_mark_ready',
-  'square_create_order',
-  'square_update_order_status',
-  'instagram_send_reply',
-  'whatsapp_send_reply',
-  'website_send_reply',
+  'kitchen_reject_ticket',
   'marketing_create_campaign',
-  'marketing_daily_report',
-  'google_business_create_post',
-  'owner_action_log',
-  'evaluator_record_event',
-  'evaluator_get_summary'
+  'marketing_launch_simulated_campaign',
+  'marketing_generate_leads',
+  'marketing_report_to_owner',
+  'world_start_scenario',
+  'world_next_event',
+  'world_advance_time',
+  'world_get_scenario_summary',
+  'evaluator_get_evidence_summary',
+  'evaluator_score_world_scenario',
+  'evaluator_generate_team_report',
+  'website_send_reply'
 ]);
 export type McpToolName = z.infer<typeof McpToolNameSchema>;
 

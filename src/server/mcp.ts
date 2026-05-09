@@ -12,18 +12,13 @@ function getToken() {
 
 export const requiredMcpTools: McpToolName[] = [
   'square_list_catalog',
-  'square_check_inventory',
-  'business_get_hours',
-  'business_get_policies',
-  'business_get_allergens',
+  'square_get_pos_summary',
   'kitchen_get_production_summary',
+  'evaluator_get_evidence_summary',
+  'marketing_report_to_owner',
   'square_create_order',
   'kitchen_create_ticket',
-  'instagram_send_reply',
-  'whatsapp_send_reply',
-  'website_send_reply',
-  'owner_action_log',
-  'evaluator_record_event'
+  'website_send_reply'
 ];
 
 export async function callMcp(tool: McpToolName | string, payload: Record<string, unknown> = {}, options: CallOptions = {}): Promise<McpResult> {
@@ -85,25 +80,25 @@ function simulatedMcp(tool: McpToolName, payload: Record<string, unknown>): McpR
         { sku: 'HC-PISTACHIO-10', name: 'cake "Pistachio Roll"', priceUsd: 44, serves: 8, sameDay: true }
       ]
     },
-    square_check_inventory: { available: true, sku: payload.sku || 'HC-HONEY-12', quantityAvailable: 4, checkedAt: new Date().toISOString() },
-    business_get_hours: { today: '10:00–19:00', pickupCutoff: '18:30', timezone: 'America/Chicago' },
-    business_get_policies: { pickup: 'Pickup in Sugar Land after confirmation.', delivery: 'Delivery requires owner confirmation.', custom: 'Ready-made cakes first; simple text decoration may require approval.', refunds: 'Owner reviews issues case by case.' },
-    business_get_allergens: { disclaimer: 'Cakes may contain gluten, dairy, eggs, nuts, and shared-kitchen allergens. Allergy questions require owner confirmation.' },
+    square_get_pos_summary: { status: 'checked', openDraftOrders: 0, source: 'sandbox_pos_summary' },
+    square_create_order: { orderId: `sq_${Date.now()}`, status: 'draft_created', paymentStatus: 'not_collected_in_sandbox' },
+    square_update_order_status: { status: payload.status || 'updated' },
     kitchen_get_production_summary: { capacityStatus: 'available_with_owner_confirmation', sameDaySlots: 3, risk: payload.urgency === 'same_day' ? 'same_day_needs_owner_approval' : 'normal' },
     kitchen_create_ticket: { ticketId: `kit_${Date.now()}`, status: 'created', station: 'cake_counter', readyWindow: 'after owner confirmation' },
     kitchen_accept_ticket: { status: 'accepted' },
-    kitchen_mark_ready: { status: 'ready' },
-    square_create_order: { orderId: `sq_${Date.now()}`, status: 'draft_created', paymentStatus: 'not_collected_in_sandbox' },
-    square_update_order_status: { status: payload.status || 'updated' },
-    instagram_send_reply: { messageId: `ig_${Date.now()}`, dryRun: payload.dryRun !== false, status: 'queued_in_sandbox' },
-    whatsapp_send_reply: { messageId: `wa_${Date.now()}`, dryRun: payload.dryRun !== false, status: 'queued_in_sandbox' },
-    website_send_reply: { messageId: `web_${Date.now()}`, dryRun: false, status: 'shown_on_site' },
+    kitchen_reject_ticket: { status: 'rejected' },
     marketing_create_campaign: { campaignId: payload.campaignId || `camp_${Date.now()}`, status: 'draft', ownerApprovalRequired: true },
-    marketing_daily_report: { revenueRange: '$15k–$20k/mo', focus: 'same-day classics + review generation + office coordinators' },
-    google_business_create_post: { postId: `gb_${Date.now()}`, status: 'draft', ownerApprovalRequired: true },
-    owner_action_log: { logged: true, ownerChannel: 'telegram' },
-    evaluator_record_event: { recorded: true, scenario: payload.scenario || 'vertical_slice' },
-    evaluator_get_summary: { scoreInputs: ['timeline', 'mcp_calls', 'owner_approval', 'handoff'] }
+    marketing_launch_simulated_campaign: { status: 'launched_in_simulator' },
+    marketing_generate_leads: { leadsGenerated: 3 },
+    marketing_report_to_owner: { reported: true, ownerChannel: 'telegram' },
+    world_start_scenario: { scenarioId: payload.scenarioId || `world_${Date.now()}`, status: 'started' },
+    world_next_event: { event: 'customer_interest' },
+    world_advance_time: { advanced: true },
+    world_get_scenario_summary: { status: 'running' },
+    evaluator_get_evidence_summary: { scoreInputs: ['timeline', 'mcp_calls', 'owner_approval', 'handoff'] },
+    evaluator_score_world_scenario: { score: 'pending' },
+    evaluator_generate_team_report: { status: 'generated' },
+    website_send_reply: { messageId: `web_${Date.now()}`, dryRun: false, status: 'shown_on_site' }
   };
   return { ok: true, source: 'simulated', tool, data: { ...fixtures[tool], input: payload } };
 }
