@@ -28,7 +28,7 @@ function runClaude(prompt: string, timeoutMs: number): Promise<string> {
 
 export async function runAssistant(req: AssistantRequest): Promise<AssistantResponse> {
   const mode = process.env.ASSISTANT_MODE || 'simulated';
-  const timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS || 12000);
+  const timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS || 90000);
 
   if (mode === 'simulated') return simulateAssistant(req);
 

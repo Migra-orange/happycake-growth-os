@@ -13,7 +13,7 @@ import { callMcp } from './mcp';
 const app = express();
 const port = Number(process.env.PORT || 8787);
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '64kb' }));
 app.use('/assets', express.static(path.resolve(process.cwd(), 'public/assets')));
 app.use('/data', express.static(path.resolve(process.cwd(), 'public/data')));
 
@@ -44,6 +44,9 @@ app.post('/api/assistant', async (req, res) => {
 });
 
 app.post('/api/telegram/owner-action', async (req, res) => {
+  if (process.env.OWNER_API_TOKEN && req.header('x-owner-token') !== process.env.OWNER_API_TOKEN) {
+    return res.status(401).json({ error: 'owner_auth_required' });
+  }
   const demo_run_id = `owner-${Date.now()}`;
   const result = await handleOwnerAction(req.body);
   appendEvidence({ demo_run_id, type: 'owner_telegram_action', channel: 'telegram', summary: result.reply, entity_id: req.body?.campaignId || req.body?.action || 'owner_action', data: { request: req.body, result } });

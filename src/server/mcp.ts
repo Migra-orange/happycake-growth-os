@@ -1,7 +1,7 @@
 type McpResult = { ok: boolean; source: 'mcp' | 'simulated'; tool: string; data: Record<string, unknown> };
 
 const endpoint = process.env.HAPPYCAKE_MCP_URL || 'https://www.steppebusinessclub.com/api/mcp';
-const token = process.env.HAPPYCAKE_MCP_TEAM_TOKEN;
+const token = process.env.HAPPYCAKE_MCP_TEAM_TOKEN || process.env.HAPPYCAKE_TEAM_TOKEN;
 
 export async function callMcp(tool: string, payload: Record<string, unknown> = {}): Promise<McpResult> {
   if (!token || process.env.MCP_MODE === 'simulated') {

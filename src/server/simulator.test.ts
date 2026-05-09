@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
 import { simulateAssistant } from './simulator';
 import { callMcp } from './mcp';
 import { handleOwnerAction } from './owner-actions';
@@ -26,5 +27,12 @@ describe('HappyCake assistant guardrails', () => {
   it('supports Telegram owner approval action', async () => {
     const res = await handleOwnerAction({ action: 'approve_campaign', campaignId: 'office-drop' });
     expect(res.reply).toContain('approved');
+  });
+
+  it('env/config names stay aligned for MCP token', () => {
+    const envExample = fs.readFileSync('.env.example', 'utf8');
+    const mcpConfig = fs.readFileSync('mcp.config.json', 'utf8');
+    expect(envExample).toContain('HAPPYCAKE_MCP_TEAM_TOKEN');
+    expect(mcpConfig).toContain('HAPPYCAKE_MCP_TEAM_TOKEN');
   });
 });
