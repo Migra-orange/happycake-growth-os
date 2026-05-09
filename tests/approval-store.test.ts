@@ -5,7 +5,7 @@ import {
   listActiveApprovals,
   rejectRecord,
   upsertApprovalRecord
-} from '../api/_lib/approval-store';
+} from '../src/server/autopilot/approval-store';
 
 describe('approval queue store', () => {
   it('keeps pending approvals queryable without duplicating the same approval id', () => {
