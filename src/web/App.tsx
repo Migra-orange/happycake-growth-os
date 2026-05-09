@@ -1,43 +1,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AssistantResponse } from '../shared/schema';
 
-type Product = { id:string; name:string; availabilityPolicy:string; serves:string; tags:string[]; image:string; description:string };
-type GrowthModel = { targetMonthlyRevenueUsd:number; currentRangeUsd:number[]; campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
+type Product = { id:string; name:string; shortName:string; priceUsd:number; weight:string; serves:string; availabilityPolicy:string; tags:string[]; image:string; description:string };
+type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
+type Offer = { label:string; value:string; code:string; angle:string };
 
 const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
-const occasions = [
-  { title: 'On the way home', detail: 'A cake for tonight, checked against today’s bake.', prompt: 'I need a classic cake today after work for 8 people.', image: '/assets/social/happy-cake-social-03.webp' },
-  { title: 'Office Friday', detail: 'Dessert for a team, with owner-approved handoff.', prompt: 'Our office has birthdays every Friday. Can you help us plan dessert for 12 people?', image: '/assets/social/happy-cake-social-01.webp' },
-  { title: 'Birthday rescue', detail: 'Simple, classic, same-day if the kitchen says yes.', prompt: 'I forgot a birthday cake. I need something simple and nice today.', image: '/assets/social/happy-cake-social-04.webp' }
+const offers: Offer[] = [
+  { label: '$5 off today', value: 'Apply a $5 online sweetness credit', code: 'SWEET5', angle: 'discount' },
+  { label: 'Free candles', value: 'Add a small candle set to the box', code: 'CANDLES', angle: 'gift' },
+  { label: 'Office treat', value: '10% off a second cake for the same office order', code: 'OFFICE10', angle: 'b2b' },
+  { label: 'Priority request', value: 'Put this order request at the top of the owner queue', code: 'FASTBOX', angle: 'urgency' },
+  { label: 'Comeback card', value: 'Add a repeat-order reminder card for next celebration', code: 'MEMORY', angle: 'retention' },
+  { label: 'Surprise note', value: 'Add a handwritten gift note to the box', code: 'NOTE', angle: 'gift' }
 ];
 
 const actionLabels: Record<string, string> = {
-  lead_received: 'Request received',
-  mcp_tool_called: 'Source checked',
-  source_checked: 'Bake, timing, and policy checked',
-  order_intent_created: 'Cake request shaped',
-  owner_approval_requested: 'Owner confirmation queued',
+  lead_received: 'Order started',
+  mcp_tool_called: 'Sandbox checked',
+  source_checked: 'Catalog and kitchen checked',
+  order_intent_created: 'Order intent created',
+  owner_approval_requested: 'Owner approval queued',
   owner_approved: 'Owner approved',
-  pos_order_created: 'Order handoff ready',
-  kitchen_ticket_created: 'Kitchen note ready',
+  pos_order_created: 'POS handoff ready',
+  kitchen_ticket_created: 'Kitchen ticket ready',
   customer_reply_sent: 'Reply prepared'
-};
-
-const policyLabels: Record<string, string> = {
-  check_today_bake: 'Check today’s bake',
-  limited_check_required: 'Limited · check first',
-  owner_or_pos_check_required: 'Owner confirmed'
 };
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [growth, setGrowth] = useState<GrowthModel | null>(null);
-  const [view, setView] = useState<'customer' | 'owner'>('customer');
-  const [message, setMessage] = useState('');
+  const [view, setView] = useState<'shop' | 'owner'>('shop');
   const [channel, setChannel] = useState<Channel>('website');
   const [name, setName] = useState('');
+  const [selected, setSelected] = useState<Product | null>(null);
+  const [pickup, setPickup] = useState('Today after work');
+  const [headcount, setHeadcount] = useState('10');
+  const [note, setNote] = useState('');
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<AssistantResponse | null>(null);
   const [ownerResult, setOwnerResult] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,107 +49,149 @@ export default function App() {
 
   useEffect(() => {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
-    fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth);
+    fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth).catch(() => {});
+    const seen = localStorage.getItem('happycake-offer-seen');
+    const timer = window.setTimeout(() => { if (!seen) setWheelOpen(true); }, 850);
+    return () => window.clearTimeout(timer);
   }, []);
+
+  const featured = products[1] || products[0];
 
   const jsonLd = useMemo(() => ({
     '@context': 'https://schema.org', '@type': 'Bakery', name: 'HappyCake', address: { '@type': 'PostalAddress', addressLocality: 'Sugar Land', addressRegion: 'TX' },
-    url: 'https://happycake.us', servesCuisine: 'cakes and desserts', makesOffer: products.map(p => ({ '@type': 'Offer', itemOffered: { '@type': 'Product', name: p.name, description: p.description }, availability: 'https://schema.org/LimitedAvailability' }))
+    url: 'https://happycake.us', servesCuisine: 'cakes and desserts', makesOffer: products.map(p => ({ '@type': 'Offer', price: p.priceUsd, priceCurrency: 'USD', itemOffered: { '@type': 'Product', name: p.name, description: p.description, image: p.image } }))
   }), [products]);
 
-  async function runSalesFlow(customMessage = message) {
-    const request = customMessage.trim();
-    if (!request) return;
+  function spinOffer() {
+    if (spinning) return;
+    setSpinning(true);
+    window.setTimeout(() => {
+      const next = offers[Math.floor(Math.random() * offers.length)];
+      setOffer(next);
+      setSpinning(false);
+      localStorage.setItem('happycake-offer-seen', '1');
+    }, 1050);
+  }
+
+  function startOrder(product: Product) {
+    setSelected(product);
+    setNote(`I would like ${product.name}${offer ? ` with code ${offer.code}` : ''}.`);
+    document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  async function submitOrder() {
+    const product = selected || featured;
+    if (!product) return;
+    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Pickup: ${pickup}. Headcount: ${headcount}. ${offer ? `Offer code: ${offer.code} — ${offer.value}. ` : ''}${note}`;
     setLoading(true);
     setOwnerResult('');
-    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-storefront', requireOwnerApproval: true }) });
+    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: offer?.code }) });
     setResult(await res.json());
     setShowTrail(false);
     setLoading(false);
   }
 
   async function ownerApprove(action: 'approve_order_handoff' | 'reject_campaign') {
-    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, intentId: result?.orderIntent?.intentId, approvalId: result?.requiredApprovals?.[0]?.approvalId, campaignId: 'office-drop', note: result?.ownerSummary || 'Owner reviewed request.' }) });
+    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, intentId: result?.orderIntent?.intentId, approvalId: result?.requiredApprovals?.[0]?.approvalId, campaignId: 'shop-offer', note: result?.ownerSummary || 'Owner reviewed order.' }) });
     const data = await res.json();
     setOwnerResult(data.reply || JSON.stringify(data));
-  }
-
-  function chooseOccasion(prompt: string) {
-    setMessage(prompt);
-    document.getElementById('request')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  function requestProduct(product: Product) {
-    setMessage(`Can I check today’s availability for ${product.name}? I need it for a celebration.`);
-    document.getElementById('request')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   return <main>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
+    {wheelOpen && <div className="offerOverlay" role="dialog" aria-modal="true">
+      <div className="offerModal">
+        <button className="closeOffer" onClick={() => { setWheelOpen(false); localStorage.setItem('happycake-offer-seen', '1'); }} aria-label="Close offer">×</button>
+        <p className="eyebrow">Before you choose</p>
+        <h2>Spin for today’s HappyCake treat.</h2>
+        <p className="offerLead">A small reason to order now — discount, gift note, candles, or priority owner review.</p>
+        <button className={`wheel ${spinning ? 'spinning' : ''}`} onClick={spinOffer} aria-label="Spin offer wheel">
+          {offers.map((o, i) => <span key={o.code} style={{ transform: `rotate(${i * 60}deg)` }}>{o.label}</span>)}
+          <b>{spinning ? 'Spinning…' : offer ? offer.label : 'SPIN'}</b>
+        </button>
+        {offer && <div className="wonOffer"><small>Your code</small><strong>{offer.code}</strong><p>{offer.value}. Owner confirms final availability and pickup.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop with this offer</button></div>}
+      </div>
+    </div>}
+
     <nav className="topbar">
-      <button className="brandMark" onClick={() => setView('customer')} aria-label="HappyCake storefront">
+      <button className="brandMark" onClick={() => setView('shop')} aria-label="HappyCake shop">
         <img src="/assets/logo/happy-cake-logo-256.png" alt="" />
-        <span><b>HappyCake</b><small>Sugar Land · Today’s bake</small></span>
+        <span><b>HappyCake</b><small>Sugar Land cake shop</small></span>
       </button>
       <div className="navActions">
-        <button className={view === 'customer' ? 'active' : 'ghost'} onClick={() => setView('customer')}>Storefront</button>
-        <button className={view === 'owner' ? 'active' : 'ghost'} onClick={() => setView('owner')}>Owner demo</button>
+        <button className={view === 'shop' ? 'active' : 'ghost'} onClick={() => setView('shop')}>Shop cakes</button>
+        <button className={view === 'owner' ? 'active' : 'ghost'} onClick={() => setView('owner')}>Owner</button>
       </div>
     </nav>
 
-    {view === 'customer' && <>
-      <section className="heroShell">
-        <div className="heroCopy">
-          <p className="eyebrow">Sugar Land · ready-made classics</p>
-          <h1>Today’s bake, ready for the moments that matter.</h1>
-          <p className="lead">Tell us the occasion, pickup window, and headcount. HappyCake checks today’s bake before confirming what’s possible.</p>
-          <div className="heroActions"><a className="primary" href="#request">Check today’s bake</a></div>
+    {view === 'shop' && <>
+      <section className="shopHero">
+        <div className="heroText">
+          <p className="eyebrow">Sugar Land · order online</p>
+          <h1>Pick the cake. See the price. Send the order.</h1>
+          <p className="lead">Real HappyCake classics with photos, weights, and prices. Choose one, add pickup details, and the owner confirms the final handoff.</p>
+          <div className="heroActions"><a className="primary" href="#catalog">Shop the menu</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin for a treat</button></div>
+          {offer && <div className="offerRibbon"><span>{offer.code}</span>{offer.value}</div>}
         </div>
-        <div className="heroGallery" aria-label="HappyCake cakes">
-          <img className="heroMain" src="/assets/hero/happy-cake-hero-01.webp" alt="HappyCake cake display" />
-          <img className="heroFloat" src="/assets/products/happy-cake-product-02.webp" alt="Classic cake" />
-          <div className="promiseSeal"><b>Checked first</b><span>no guessed price, pickup, or availability</span></div>
+        <div className="heroShowcase">
+          <img className="showcaseMain" src="/assets/hero/happy-cake-hero-02.webp" alt="HappyCake cakes" />
+          {featured && <div className="heroProductCard"><img src={featured.image} alt={featured.name}/><div><small>Featured</small><b>{featured.name}</b><span>${featured.priceUsd} · {featured.weight}</span></div></div>}
         </div>
       </section>
 
-      <section className="occasionStrip">
-        {occasions.map(o => <button className="occasionTile" key={o.title} onClick={() => chooseOccasion(o.prompt)}>
-          <img src={o.image} alt="" /><span><b>{o.title}</b><small>{o.detail}</small></span>
-        </button>)}
+      <section className="promoRail">
+        <button onClick={() => setWheelOpen(true)}><b>Spin the wheel</b><span>Unlock a small ordering perk</span></button>
+        <button onClick={() => featured && startOrder(featured)}><b>Office birthday?</b><span>Pick cake "Napoleon" for 10</span></button>
+        <button onClick={() => products[0] && startOrder(products[0])}><b>Family dinner</b><span>Order cake "Honey" tonight</span></button>
       </section>
 
-      <section className="requestStage" id="request">
-        <div className="requestIntro"><p className="eyebrow">Concierge request</p><h2>One calm check before anyone makes a promise.</h2><p>Availability, pickup timing, policies, and special questions are confirmed from the source of truth or by the owner.</p></div>
-        <div className="requestCard">
+      <section className="catalogSection" id="catalog">
+        <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Classic cakes, priced clearly.</h2></div><p>Pickup time and availability still get owner confirmation before the promise goes out.</p></div>
+        <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
+          <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{p.tags[0]}</span></button>
+          <div className="cakeInfo"><div><h3>{p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>${p.priceUsd}</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button></div>
+        </article>)}</div>
+      </section>
+
+      <section className="orderStage" id="order">
+        <div className="orderSummary">
+          <p className="eyebrow">Order request</p>
+          <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
+          {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>${selected.priceUsd}</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. The request goes through the live sandbox and waits for owner approval.</p>}
+          {offer && <div className="offerApplied"><b>{offer.code}</b><span>{offer.value}</span></div>}
+        </div>
+        <div className="orderForm">
           <label>Your name <input value={name} onChange={e=>setName(e.target.value)} placeholder="Optional" /></label>
-          <label>Where should we reply? <select value={channel} onChange={e=>setChannel(e.target.value as Channel)}><option value="website">Website</option><option value="instagram">Instagram DM</option><option value="whatsapp">WhatsApp</option></select></label>
-          <label>Occasion, pickup window, headcount <textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Example: I need a Napoleon cake today after work for 10 people." /></label>
-          <button className="primary wide" onClick={() => runSalesFlow()} disabled={loading || !message.trim()}>{loading ? 'Checking today’s bake…' : 'Check today’s bake'}</button>
-          <p className="fineprint">Prices, hours, allergens, delivery, and pickup are confirmed before they are promised.</p>
+          <label>Reply channel <select value={channel} onChange={e=>setChannel(e.target.value as Channel)}><option value="website">Website</option><option value="instagram">Instagram DM</option><option value="whatsapp">WhatsApp</option></select></label>
+          <label>Pickup window <input value={pickup} onChange={e=>setPickup(e.target.value)} /></label>
+          <label>Guests <input value={headcount} onChange={e=>setHeadcount(e.target.value)} /></label>
+          <label>Note <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add text on box, occasion, or question." /></label>
+          <button className="primary wide" onClick={submitOrder} disabled={loading || !selected}>{loading ? 'Sending order request…' : 'Send order request'}</button>
+          <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the sandbox/owner before fulfillment.</p>
         </div>
       </section>
 
       {result && <section className="replyPanel premiumResult">
-        <div className="replyDraft"><span className="softBadge">Ready for owner confirmation</span><h2>Reply draft</h2><p>{result.reply}</p></div>
-        <div className="realityBox"><div className="sectionHeader"><h2>What we checked</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide details' : 'Show details'}</button></div><div className="checkGrid"><span>Today’s bake</span><span>Pickup timing</span><span>Kitchen</span><span>Owner</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{a.detail.replace(/simulated · /g, '').replace(/public Vercel keeps tokens server-side/g, 'details kept private').replace(/^MCP: /, '')}</small></span></li>)}</ol>}</div>
+        <div className="replyDraft"><span className="softBadge">Order request sent</span><h2>Customer reply</h2><p>{result.reply}</p></div>
+        <div className="realityBox"><div className="sectionHeader"><h2>Sandbox proof</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide' : 'Show'}</button></div><div className="checkGrid"><span>Catalog</span><span>POS</span><span>Kitchen</span><span>Owner</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{a.detail.replace(/simulated · /g, '').replace(/^MCP: /, '')}</small></span></li>)}</ol>}</div>
       </section>}
 
-      <section className="promiseSection"><h2>How HappyCake keeps promises honest.</h2><div className="stepGrid"><article><b>01</b><h3>Tell us the moment</h3><p>Birthday, office, school, family dinner, or a cake on the way home.</p></article><article><b>02</b><h3>We check reality</h3><p>Today’s bake, inventory, policies, and kitchen capacity are checked before the reply.</p></article><article><b>03</b><h3>Owner confirms</h3><p>The owner approves the handoff before customer-facing promises go out.</p></article></div></section>
-
-      <section className="productSection"><div className="sectionHeader"><div><p className="eyebrow">Ready-made classics</p><h2>Choose the feeling. We’ll check the details.</h2></div></div><div className="products">{products.map(p => <article className="product" key={p.id}><button onClick={() => requestProduct(p)}><img src={p.image} alt={p.name}/></button><div><div className="tagRow">{p.tags.slice(0,2).map(t => <small key={t}>{t}</small>)}</div><h3>{p.name}</h3><p>{p.description}</p><button className="textCta" onClick={() => requestProduct(p)}>{policyLabels[p.availabilityPolicy] || 'Check availability'} →</button></div></article>)}</div></section>
+      <section className="marketingSection">
+        <div><p className="eyebrow">Growth hooks</p><h2>Not a brochure. A buying machine.</h2></div>
+        <div className="hookGrid"><article><b>Wheel offer</b><p>Turns a cold visitor into an active shopper in the first five seconds.</p></article><article><b>Priced catalog</b><p>No vague “ask us” energy. The customer can choose and send an order.</p></article><article><b>Repeat loop</b><p>Offer codes, office orders, and reminder cards create the next purchase.</p></article></div>
+      </section>
     </>}
 
     {view === 'owner' && <>
       <section className="ownerHero">
-        <div><p className="eyebrow">Telegram-first owner control</p><h1>The day’s decisions, ready for approval.</h1><p className="lead">Leads, source checks, campaign drafts, and kitchen handoffs stay in one workflow. Nothing publishes or promises without owner control.</p></div>
-        <div className="modelCard"><small>Private operating view</small><b>Approval before promise.</b><span>Primary lever: same-day classics and recurring office orders, controlled from Telegram.</span></div>
+        <div><p className="eyebrow">Telegram-first owner control</p><h1>Approve orders, promos, and kitchen handoff.</h1><p className="lead">The shop sells directly, but final fulfillment waits for owner control and sandbox evidence.</p></div>
+        <div className="modelCard"><small>Live sandbox</small><b>Catalog → POS → kitchen</b><span>Marketing offers and order requests are visible before side effects.</span></div>
       </section>
-
       <section className="ownerGrid">
-        <div className="panel approvalInbox"><div className="sectionHeader"><h2>Approval inbox</h2><span className="softBadge">Telegram preview</span></div>{result ? <div className="approvalCard"><b>{result.orderIntent?.customerName || 'Customer'} · {result.orderIntent?.channel}</b><p>{result.ownerSummary}</p><div className="approvalMeta"><span>Missing: {result.orderIntent?.requiredFieldsMissing?.join(', ') || 'none'}</span><span>Risks: {result.riskFlags?.join(', ') || 'none'}</span></div><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Send reply</button><button className="secondary" onClick={() => setShowTrail(true)}>Open trust trail</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Can’t fulfill</button></div></div> : <div className="emptyState"><b>No approval yet.</b><p>Run a customer request to create the first owner approval card.</p><button onClick={() => setView('customer')}>Open storefront</button></div>}{ownerResult && <p className="ownerToast">{ownerResult}</p>}</div>
-        <div className="panel dailyBrief"><h2>Daily brief</h2><ul><li><b>Today’s demand angle</b><span>Same-day ready-made classics after work.</span></li><li><b>Kitchen risk</b><span>Same-day requests require owner confirmation.</span></li><li><b>Trust trail</b><span>{result ? `${result.actions.length} recorded events` : 'Waiting for first request'}</span></li></ul></div>
-        <div className="panel campaignPlan"><h2>Local demand plan</h2>{growth?.campaigns.map(c => <div className="campaignRow" key={c.id}><b>{c.name}</b><span>{c.channels.join(', ')}</span><small>{c.promise}</small></div>)}</div>
+        <div className="panel approvalInbox"><div className="sectionHeader"><h2>Approval inbox</h2><span className="softBadge">Telegram preview</span></div>{result ? <div className="approvalCard"><b>{result.orderIntent?.customerName || 'Customer'} · {result.orderIntent?.channel}</b><p>{result.ownerSummary}</p><div className="approvalMeta"><span>Missing: {result.orderIntent?.requiredFieldsMissing?.join(', ') || 'none'}</span><span>Risks: {result.riskFlags?.join(', ') || 'none'}</span></div><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Approve handoff</button><button className="secondary" onClick={() => setShowTrail(true)}>Open proof</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Reject</button></div></div> : <div className="emptyState"><b>No order yet.</b><p>Send an order from the shop to create the first approval card.</p><button onClick={() => setView('shop')}>Open shop</button></div>}{ownerResult && <p className="ownerToast">{ownerResult}</p>}</div>
+        <div className="panel dailyBrief"><h2>Today’s levers</h2><ul><li><b>First visit</b><span>Wheel offer captures intent.</span></li><li><b>Basket</b><span>Office second-cake promo.</span></li><li><b>Repeat</b><span>Comeback card and reminder offer.</span></li></ul></div>
+        <div className="panel campaignPlan"><h2>Campaign queue</h2>{growth?.campaigns?.map(c => <div className="campaignRow" key={c.id}><b>{c.name}</b><span>{c.channels.join(', ')}</span><small>{c.promise}</small></div>)}</div>
       </section>
     </>}
   </main>;

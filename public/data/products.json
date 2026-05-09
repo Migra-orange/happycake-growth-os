@@ -3,46 +3,58 @@
   "locality": "Sugar Land, Texas",
   "updatedAt": "2026-05-09",
   "guardrails": [
-    "Do not quote prices from this public demo catalog.",
-    "Check Square/POS MCP before quoting price, inventory, pickup time, allergens, hours, or delivery.",
+    "Prices and product names come from HappyCake brand/POS sandbox context.",
+    "Pickup time, inventory, allergens, delivery, and special requests still require source-of-truth or owner confirmation.",
     "Ready-made classic cakes first; decoration is small and optional, not custom cake production."
   ],
   "products": [
     {
       "id": "honey",
-      "name": "Honey Layer Cake",
-      "availabilityPolicy": "check_today_bake",
-      "serves": "Confirmed today",
+      "name": "cake \"Honey\"",
+      "shortName": "Honey",
+      "priceUsd": 42,
+      "weight": "1.2 kg",
+      "serves": "serves 10",
+      "availabilityPolicy": "order_request",
       "tags": ["classic", "family", "most-loved"],
       "image": "/assets/products/happy-cake-product-01.webp",
-      "description": "Soft honey layers for birthdays, family visits, and simple celebrations."
+      "description": "Soft honey layers with warm cream. The safe, loved choice for family tables and birthdays."
     },
     {
       "id": "napoleon",
-      "name": "Classic Napoleon Cake",
-      "availabilityPolicy": "check_today_bake",
-      "serves": "Confirmed today",
-      "tags": ["classic", "office", "flaky"],
+      "name": "cake \"Napoleon\"",
+      "shortName": "Napoleon",
+      "priceUsd": 46,
+      "weight": "1.2 kg",
+      "serves": "serves 10",
+      "availabilityPolicy": "order_request",
+      "tags": ["flaky", "custard", "office"],
       "image": "/assets/products/happy-cake-product-02.webp",
-      "description": "A crisp, creamy classic that works beautifully for guests and office celebrations."
+      "description": "Buttery puff layers with vanilla custard. Crisp, creamy, and easy to share."
     },
     {
       "id": "milk-maiden",
-      "name": "Milk Maiden Cake",
-      "availabilityPolicy": "check_today_bake",
-      "serves": "Confirmed today",
-      "tags": ["kids", "family", "light"],
+      "name": "cake \"Milk Maiden\"",
+      "shortName": "Milk Maiden",
+      "priceUsd": 39,
+      "weight": "1.0 kg",
+      "serves": "serves 8",
+      "availabilityPolicy": "order_request",
+      "tags": ["light", "vanilla", "kids"],
       "image": "/assets/products/happy-cake-product-03.webp",
-      "description": "A light, gentle cake for family gatherings and children-friendly occasions."
+      "description": "Light vanilla biscuit and tender butter cream. Gentle, sweet, and children-friendly."
     },
     {
       "id": "pistachio-roll",
-      "name": "Pistachio Roll",
-      "availabilityPolicy": "limited_check_required",
-      "serves": "Limited batch",
-      "tags": ["limited", "pistachio", "gift"],
+      "name": "cake \"Pistachio Roll\"",
+      "shortName": "Pistachio Roll",
+      "priceUsd": 44,
+      "weight": "1.0 kg",
+      "serves": "serves 8",
+      "availabilityPolicy": "limited_batch",
+      "tags": ["pistachio", "raspberry", "gift"],
       "image": "/assets/products/happy-cake-product-04.webp",
-      "description": "A small celebration roll for gifts, visits, and thoughtful dessert moments."
+      "description": "Light meringue, butter cream, pistachio, and a bright raspberry finish."
     }
   ]
 }

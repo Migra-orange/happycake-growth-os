@@ -42,7 +42,7 @@ export function createOrderIntent(req: AssistantRequest, intentId: string): Orde
 
 export function customerReplyForIntent(intent: OrderIntent) {
   if (intent.requiredFieldsMissing.length) {
-    return `Hi${intent.customerName ? ` ${intent.customerName}` : ''}. Thank you for reaching out to HappyCake. I can help with that — I need ${intent.requiredFieldsMissing.join(', ')} before we confirm anything. We will check today’s bake and ask the owner before promising price, pickup, or availability.`;
+    return `Hi${intent.customerName ? ` ${intent.customerName}` : ''}. Thank you for reaching out to HappyCake. Pick one cake from the menu and send your pickup window — the owner will confirm final availability, allergens, and pickup before fulfillment.`;
   }
-  return `Hi${intent.customerName ? ` ${intent.customerName}` : ''}. HappyCake can help with ${intent.productPreference || 'a classic cake'} for ${intent.occasion || 'your occasion'}. I checked the sandbox catalog, policies, and kitchen status; the owner still needs to approve the same-day handoff before we promise pickup. Next step: we will confirm availability and send the pickup details here.`;
+  return `Hi${intent.customerName ? ` ${intent.customerName}` : ''}. Your HappyCake request for ${intent.productPreference || 'a classic cake'} is queued. I matched it against the sandbox catalog and kitchen status; the owner still approves final pickup and handoff before fulfillment.`;
 }

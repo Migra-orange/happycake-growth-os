@@ -123,8 +123,8 @@ async function runFlow(body: any) {
     evidenceId,
     guardrails,
     reply: missing.length
-      ? `Hi${name ? ` ${name}` : ''}. Thank you for reaching out to HappyCake. I can help — I need ${missing.join(', ')} before we confirm anything. We will check today’s bake and ask the owner before promising price, pickup, or availability.`
-      : `Hi${name ? ` ${name}` : ''}. HappyCake can help with ${productPreference} for ${isB2B ? 'your office birthday' : 'your occasion'}. I checked the sandbox catalog, POS summary, and kitchen capacity; the owner still needs to approve the same-day handoff before we promise pickup. Next step: we will confirm availability and send the pickup details here.`,
+      ? `Hi${name ? ` ${name}` : ''}. Thank you for reaching out to HappyCake. Pick one cake from the menu and send your pickup window — the owner will confirm final availability, allergens, and pickup before fulfillment.`
+      : `Hi${name ? ` ${name}` : ''}. Your HappyCake request for ${productPreference} is queued. I matched it against the sandbox catalog, POS summary, and kitchen capacity. The owner still approves final pickup and handoff before fulfillment.`,
     ownerSummary: `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/POS/kitchen/evaluator checks; owner approval required before POS/kitchen handoff.`,
     actions,
     orderIntent: { intentId, state: 'customer_reply_sent', channel, customerName: name, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: message, riskFlags, requiredFieldsMissing: missing },
