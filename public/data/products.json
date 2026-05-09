@@ -10,81 +10,39 @@
   "products": [
     {
       "id": "honey",
-      "name": "cake \"Honey\"",
+      "name": "Honey Layer Cake",
       "availabilityPolicy": "check_today_bake",
-      "serves": "source-of-truth required",
-      "tags": [
-        "classic",
-        "family",
-        "most-loved"
-      ],
+      "serves": "Confirmed today",
+      "tags": ["classic", "family", "most-loved"],
       "image": "/assets/products/happy-cake-product-01.webp",
-      "description": "Classic honey-layer cake. Good for family visits, birthdays, and simple celebrations."
+      "description": "Soft honey layers for birthdays, family visits, and simple celebrations."
     },
     {
       "id": "napoleon",
-      "name": "cake \"Napoleon\"",
+      "name": "Classic Napoleon Cake",
       "availabilityPolicy": "check_today_bake",
-      "serves": "source-of-truth required",
-      "tags": [
-        "classic",
-        "office",
-        "flaky"
-      ],
+      "serves": "Confirmed today",
+      "tags": ["classic", "office", "flaky"],
       "image": "/assets/products/happy-cake-product-02.webp",
-      "description": "Classic Napoleon-style cake. Easy to position for guests and office celebrations."
+      "description": "A crisp, creamy classic that works beautifully for guests and office celebrations."
     },
     {
       "id": "milk-maiden",
-      "name": "cake \"Milk Maiden\"",
+      "name": "Milk Maiden Cake",
       "availabilityPolicy": "check_today_bake",
-      "serves": "source-of-truth required",
-      "tags": [
-        "kids",
-        "family",
-        "light"
-      ],
+      "serves": "Confirmed today",
+      "tags": ["kids", "family", "light"],
       "image": "/assets/products/happy-cake-product-03.webp",
-      "description": "Light classic cake option for family gatherings and children-friendly occasions."
+      "description": "A light, gentle cake for family gatherings and children-friendly occasions."
     },
     {
       "id": "pistachio-roll",
-      "name": "cake \"Pistachio Roll\"",
+      "name": "Pistachio Roll",
       "availabilityPolicy": "limited_check_required",
-      "serves": "source-of-truth required",
-      "tags": [
-        "limited",
-        "pistachio",
-        "gift"
-      ],
+      "serves": "Limited batch",
+      "tags": ["limited", "pistachio", "gift"],
       "image": "/assets/products/happy-cake-product-04.webp",
-      "description": "Limited classic roll option for gifts and small celebrations."
-    },
-    {
-      "id": "office-dessert-tray",
-      "name": "Friday office dessert tray",
-      "availabilityPolicy": "owner_or_pos_check_required",
-      "serves": "source-of-truth required",
-      "tags": [
-        "office",
-        "recurring",
-        "b2b"
-      ],
-      "image": "/assets/social/happy-cake-social-01.webp",
-      "description": "Ready-made dessert tray concept for office birthdays, staff appreciation, and Friday treats."
-    },
-    {
-      "id": "weekend-cupcake-box",
-      "name": "Weekend cupcake box",
-      "availabilityPolicy": "check_today_bake",
-      "serves": "source-of-truth required",
-      "tags": [
-        "campaign",
-        "gift",
-        "pickup"
-      ],
-      "image": "/assets/social/happy-cake-social-02.webp",
-      "description": "Simple box concept for family visits, school events, and small thank-you moments."
+      "description": "A small celebration roll for gifts, visits, and thoughtful dessert moments."
     }
   ]
 }

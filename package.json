@@ -1,7 +1,7 @@
 {
   "name": "happycake-growth-os",
   "version": "0.1.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "description": "HappyCake Growth OS: local demand engine and AI sales operations system for Sugar Land.",
   "scripts": {
