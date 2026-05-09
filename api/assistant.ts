@@ -34,9 +34,9 @@ const requiredEvents = [
 ];
 
 const endpoint = process.env.HAPPYCAKE_MCP_URL || 'https://www.steppebusinessclub.com/api/mcp';
-const mcpTools = ['square_list_catalog', 'square_check_inventory', 'business_get_hours', 'business_get_policies', 'business_get_allergens', 'kitchen_get_production_summary'] as const;
+const mcpTools = ['square_list_catalog', 'square_get_pos_summary', 'kitchen_get_production_summary', 'evaluator_get_evidence_summary'] as const;
 
-type McpTool = typeof mcpTools[number] | 'owner_action_log' | 'evaluator_record_event' | 'website_send_reply';
+type McpTool = typeof mcpTools[number] | 'marketing_report_to_owner' | 'website_send_reply';
 type McpCall = { ok: boolean; source: 'mcp' | 'simulated'; tool: string; data: Record<string, unknown>; latencyMs: number };
 
 function token() {
@@ -46,13 +46,10 @@ function token() {
 function simulatedData(tool: string, input: Record<string, unknown>) {
   const base: Record<string, Record<string, unknown>> = {
     square_list_catalog: { catalogVersion: 'sandbox-2026-05', products: ['Honey Layer Cake', 'Classic Napoleon Cake', 'Milk Maiden Cake', 'Pistachio Roll'] },
-    square_check_inventory: { available: true, sku: input.sku || 'HC-NAPOLEON-12', quantityAvailable: 3 },
-    business_get_hours: { today: 'source check required', timezone: 'America/Chicago' },
-    business_get_policies: { pickup: 'Owner confirmation required before customer promise.', delivery: 'Owner confirmation required.' },
-    business_get_allergens: { disclaimer: 'Allergen questions require owner confirmation.' },
+    square_get_pos_summary: { status: 'checked', source: 'sandbox_pos_summary' },
     kitchen_get_production_summary: { capacityStatus: 'owner_confirmation_required', sameDayRisk: input.urgency === 'same_day' },
-    owner_action_log: { logged: true },
-    evaluator_record_event: { recorded: true },
+    marketing_report_to_owner: { reported: true },
+    evaluator_get_evidence_summary: { requested: true },
     website_send_reply: { status: 'shown_on_site' }
   };
   return { ...(base[tool] || {}), input };
@@ -107,14 +104,11 @@ async function runFlow(body: any) {
 
   const mcpChecks = await Promise.all([
     callMcp('square_list_catalog', { evidenceId, intentId }),
-    callMcp('square_check_inventory', { ...baseInput, sku: productPreference ? `HC-${productPreference.replace(/[^A-Z]/gi, '').toUpperCase().slice(0, 8)}` : 'HC-HONEY-12' }),
-    callMcp('business_get_hours', { ...baseInput, pickupWindow: isUrgent ? 'today' : undefined }),
-    callMcp('business_get_policies', { ...baseInput, risks: riskFlags }),
-    callMcp('business_get_allergens', baseInput),
-    callMcp('kitchen_get_production_summary', baseInput)
+    callMcp('square_get_pos_summary', { evidenceId, intentId, productPreference }),
+    callMcp('kitchen_get_production_summary', baseInput),
+    callMcp('evaluator_get_evidence_summary', { evidenceId, intentId, scenario: 'website_assistant_flow' })
   ]);
-  await callMcp('owner_action_log', { evidenceId, intentId, action: 'approval_requested', channel });
-  await callMcp('evaluator_record_event', { evidenceId, intentId, scenario: 'website_assistant_flow', mcpSources: mcpChecks.map((c) => c.source) });
+  await callMcp('marketing_report_to_owner', { evidenceId, intentId, scenario: 'website_assistant_flow', mcpSources: mcpChecks.map((c) => c.source) });
 
   const sourceSummary = mcpChecks.every((c) => c.source === 'mcp') ? 'real Steppe MCP' : 'safe simulator fallback';
   const actions = requiredEvents.flatMap((type) => type === 'mcp_tool_called'
@@ -130,8 +124,8 @@ async function runFlow(body: any) {
     guardrails,
     reply: missing.length
       ? `Hi${name ? ` ${name}` : ''}. Thank you for reaching out to HappyCake. I can help — I need ${missing.join(', ')} before we confirm anything. We will check today’s bake and ask the owner before promising price, pickup, or availability.`
-      : `Hi${name ? ` ${name}` : ''}. HappyCake can help with ${productPreference} for ${isB2B ? 'your office birthday' : 'your occasion'}. I checked the catalog, policies, and kitchen status; the owner still needs to approve the same-day handoff before we promise pickup. Next step: we will confirm availability and send the pickup details here.`,
-    ownerSummary: `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/inventory/policies/kitchen checks; owner approval required before POS/kitchen handoff.`,
+      : `Hi${name ? ` ${name}` : ''}. HappyCake can help with ${productPreference} for ${isB2B ? 'your office birthday' : 'your occasion'}. I checked the sandbox catalog, POS summary, and kitchen capacity; the owner still needs to approve the same-day handoff before we promise pickup. Next step: we will confirm availability and send the pickup details here.`,
+    ownerSummary: `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/POS/kitchen/evaluator checks; owner approval required before POS/kitchen handoff.`,
     actions,
     orderIntent: { intentId, state: 'customer_reply_sent', channel, customerName: name, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: message, riskFlags, requiredFieldsMissing: missing },
     mcpChecks,
@@ -143,7 +137,7 @@ async function runFlow(body: any) {
 function detailFor(type: string, channel: string, intentId: string, sourceSummary: string) {
   const map: Record<string, string> = {
     lead_received: `Lead normalized from ${channel}.`,
-    source_checked: `Catalog, inventory, hours, policies, allergens, and kitchen were checked through ${sourceSummary}.`,
+    source_checked: `Catalog, POS summary, evaluator state, and kitchen capacity were checked through ${sourceSummary}.`,
     order_intent_created: `Order intent ${intentId} created.`,
     owner_approval_requested: 'Telegram owner approval card created.',
     owner_approved: 'Owner approval required before side effects.',

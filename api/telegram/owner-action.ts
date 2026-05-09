@@ -48,9 +48,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const mcpCalls = rejected
-      ? [await callMcp('owner_action_log', { intentId, action: 'rejected', note: req.body?.note || '' })]
+      ? [await callMcp('marketing_report_to_owner', { intentId, action: 'rejected', note: req.body?.note || '' })]
       : [
-        await callMcp('owner_action_log', { intentId, action: 'approved', note: req.body?.note || '' }),
+        await callMcp('marketing_report_to_owner', { intentId, action: 'approved', note: req.body?.note || '' }),
         await callMcp('square_create_order', { intentId, approvedBy: 'owner_telegram' }),
         await callMcp('kitchen_create_ticket', { intentId, approvedBy: 'owner_telegram' })
       ];
