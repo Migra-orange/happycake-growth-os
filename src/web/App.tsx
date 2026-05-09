@@ -55,17 +55,30 @@ export default function App() {
   const [agentDrafts, setAgentDrafts] = useState<AgentConfig[]>([]);
   const [configSaved, setConfigSaved] = useState(false);
   const [configStatus, setConfigStatus] = useState('loading server config');
+  const [ownerToken, setOwnerToken] = useState('');
 
   useEffect(() => {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
     fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth).catch(() => {});
     refreshDashboard();
     const seen = localStorage.getItem('happycake-offer-seen');
+    setOwnerToken(localStorage.getItem('happycake-owner-token') || '');
     const ownerRoute = window.location.hash === '#owner' || window.location.search.includes('owner=1');
     const timer = window.setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }, 850);
     return () => window.clearTimeout(timer);
   }, []);
 
+  function ownerHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (ownerToken.trim()) headers['x-owner-token'] = ownerToken.trim();
+    return headers;
+  }
+
+  function updateOwnerToken(value: string) {
+    setOwnerToken(value);
+    if (value.trim()) localStorage.setItem('happycake-owner-token', value.trim());
+    else localStorage.removeItem('happycake-owner-token');
+  }
 
   async function refreshDashboard() {
     try {
@@ -148,8 +161,12 @@ export default function App() {
     const approvalId = queueItem?.approvalId || result?.requiredApprovals?.[0]?.approvalId;
     const intentId = queueItem?.intentId || result?.orderIntent?.intentId;
     const note = queueItem?.summary || result?.ownerSummary || 'Owner reviewed order.';
-    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, intentId, approvalId, campaignId: 'shop-offer', note }) });
+    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: ownerHeaders(), body: JSON.stringify({ action, intentId, approvalId, campaignId: 'shop-offer', note }) });
     const data = await res.json();
+    if (res.status === 401) {
+      setOwnerResult('Owner token required before approval/reject actions.');
+      return;
+    }
     setOwnerResult(data.reply || JSON.stringify(data));
     if (data?.approval && approvalId) {
       setDashboard(current => current ? {
@@ -166,8 +183,12 @@ export default function App() {
 
   async function saveAgentConfig() {
     try {
-      const res = await fetch(`${API}/api/owner/config`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agents: agentDrafts }) });
+      const res = await fetch(`${API}/api/owner/config`, { method: 'POST', headers: ownerHeaders(), body: JSON.stringify({ agents: agentDrafts }) });
       const data:AgentConfigResponse = await res.json();
+      if (res.status === 401) {
+        setConfigStatus('owner token required');
+        return;
+      }
       if (!res.ok || !data.ok) throw new Error('config_save_failed');
       setAgentDrafts(data.agents);
       setConfigStatus(`${data.storageMode}${data.durableConfigured ? ' · durable' : ' · demo memory'}${data.ownerAuthEnabled ? ' · owner auth on' : ' · owner auth off'}`);
@@ -343,7 +364,7 @@ export default function App() {
       <section className="agentConsole">
         <div className="sectionHeader">
           <div><p className="eyebrow">Agent configuration</p><h2>Control how the AI sells.</h2></div>
-          <button className="primary" onClick={saveAgentConfig}>{configSaved ? 'Saved' : 'Save config'}</button>
+          <div className="ownerAuthBox"><label>Owner token <input type="password" value={ownerToken} onChange={e => updateOwnerToken(e.target.value)} placeholder="Required for save/approve" autoComplete="off" /></label><button className="primary" onClick={saveAgentConfig}>{configSaved ? 'Saved' : 'Save config'}</button></div>
         </div>
         <div className="agentGrid">{agentDrafts.map(agent => <article className={agent.enabled ? 'agentCard enabled' : 'agentCard'} key={agent.id}>
           <div className="agentTop"><div><small>{agent.id}</small><h3>{agent.name}</h3></div><label className="switch"><input type="checkbox" checked={agent.enabled} onChange={e => updateAgent(agent.id, { enabled: e.target.checked })} /><span /></label></div>

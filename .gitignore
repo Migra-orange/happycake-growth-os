@@ -13,3 +13,4 @@ evidence/*.jsonl
 !evidence/sample-assistant-run.json
 !evidence/README.md
 .vercel
+.env*.local

@@ -21,6 +21,7 @@
     "verify": "npm run build && npm test && npm run assistant:test && npm run demo && npm run evaluator:smoke && npm run check:secrets"
   },
   "dependencies": {
+    "@vercel/blob": "^2.3.3",
     "@vitejs/plugin-react": "latest",
     "concurrently": "latest",
     "cors": "latest",

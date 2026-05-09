@@ -1,9 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { get as blobGet, put as blobPut } from '@vercel/blob';
 
 type AgentMode = 'owner_approval' | 'suggest_only' | 'telegram_first' | 'always_on' | 'paused';
 type AgentTone = 'warm_direct' | 'playful' | 'concise' | 'silent';
 type AgentConfigRecord = { id:string; name:string; enabled:boolean; mode:AgentMode; tone:AgentTone; dailyLimit:number; goal:string };
-type AgentConfigStore = { agents:AgentConfigRecord[]; version:number; updatedAt:string; storageMode:'server_memory'|'upstash_redis' };
+type AgentConfigStore = { agents:AgentConfigRecord[]; version:number; updatedAt:string; storageMode:'server_memory'|'upstash_redis'|'vercel_blob' };
 type GlobalWithConfigStore = typeof globalThis & { __happycakeAgentConfigStore?: AgentConfigStore };
 
 const DEFAULT_AGENT_CONFIG: AgentConfigRecord[] = [
@@ -19,6 +20,7 @@ const allowedIds = new Set(DEFAULT_AGENT_CONFIG.map(agent => agent.id));
 const allowedModes = new Set<AgentMode>(['owner_approval', 'suggest_only', 'telegram_first', 'always_on', 'paused']);
 const allowedTones = new Set<AgentTone>(['warm_direct', 'playful', 'concise', 'silent']);
 const storageKey = 'happycake:owner:agent-config:v1';
+const blobPath = 'happycake/owner-agent-config.json';
 
 function hasOwnerToken(req: VercelRequest) {
   return !process.env.OWNER_API_TOKEN || req.headers['x-owner-token'] === process.env.OWNER_API_TOKEN;
@@ -28,6 +30,14 @@ function redisEnv() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
   return url && token ? { url: url.replace(/\/$/, ''), token } : null;
+}
+
+function blobEnv() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+}
+
+function durableConfigured() {
+  return Boolean(redisEnv() || blobEnv());
 }
 
 function defaultStore(storageMode: AgentConfigStore['storageMode'] = 'server_memory'): AgentConfigStore {
@@ -93,8 +103,36 @@ async function redisSet(store: AgentConfigStore) {
   return res.ok;
 }
 
+async function blobGetStore() {
+  if (!blobEnv()) return null;
+  try {
+    const result = await blobGet(blobPath, { access: 'private', useCache: false });
+    if (!result || result.statusCode !== 200 || !result.stream) return null;
+    const text = await new Response(result.stream).text();
+    const parsed = JSON.parse(text) as AgentConfigStore;
+    return { ...parsed, storageMode: 'vercel_blob' as const };
+  } catch {
+    return null;
+  }
+}
+
+async function blobSetStore(store: AgentConfigStore) {
+  if (!blobEnv()) return false;
+  try {
+    await blobPut(blobPath, JSON.stringify(store), {
+      access: 'private',
+      allowOverwrite: true,
+      contentType: 'application/json',
+      cacheControlMaxAge: 60
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function readStore() {
-  return await redisGet() || memoryStore();
+  return await redisGet() || await blobGetStore() || memoryStore();
 }
 
 async function writeStore(agentsPayload: unknown) {
@@ -105,27 +143,28 @@ async function writeStore(agentsPayload: unknown) {
     agents: mergeAgents(current.agents || DEFAULT_AGENT_CONFIG, normalized.agents),
     version: (current.version || 0) + 1,
     updatedAt: new Date().toISOString(),
-    storageMode: redisEnv() ? 'upstash_redis' : 'server_memory'
+    storageMode: redisEnv() ? 'upstash_redis' : blobEnv() ? 'vercel_blob' : 'server_memory'
   };
   const wroteRedis = await redisSet(next);
-  if (!wroteRedis) {
+  const wroteBlob = wroteRedis ? false : await blobSetStore(next);
+  if (!wroteRedis && !wroteBlob) {
     const globalStore = globalThis as GlobalWithConfigStore;
     globalStore.__happycakeAgentConfigStore = { ...next, storageMode: 'server_memory' };
     return globalStore.__happycakeAgentConfigStore;
   }
-  return next;
+  return { ...next, storageMode: wroteRedis ? 'upstash_redis' : 'vercel_blob' };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === 'GET') {
       const store = await readStore();
-      return res.status(200).json({ ok: true, ...store, durableConfigured: Boolean(redisEnv()), ownerAuthEnabled: Boolean(process.env.OWNER_API_TOKEN) });
+      return res.status(200).json({ ok: true, ...store, durableConfigured: durableConfigured(), ownerAuthEnabled: Boolean(process.env.OWNER_API_TOKEN) });
     }
     if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
     if (!hasOwnerToken(req)) return res.status(401).json({ ok: false, error: 'owner_auth_required' });
     const store = await writeStore(req.body?.agents);
-    return res.status(200).json({ ok: true, ...store, durableConfigured: Boolean(redisEnv()), ownerAuthEnabled: Boolean(process.env.OWNER_API_TOKEN) });
+    return res.status(200).json({ ok: true, ...store, durableConfigured: durableConfigured(), ownerAuthEnabled: Boolean(process.env.OWNER_API_TOKEN) });
   } catch {
     return res.status(400).json({ ok: false, error: 'invalid_agent_config' });
   }
