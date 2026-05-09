@@ -4,7 +4,7 @@ import type { AssistantResponse } from '../shared/schema';
 type Product = { id:string; name:string; availabilityPolicy:string; serves:string; tags:string[]; image:string; description:string };
 type GrowthModel = { targetMonthlyRevenueUsd:number; currentRangeUsd:number[]; revenueModel:{stream:string;targetUsd:number;mechanism:string}[]; campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 
-const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
+const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);

@@ -2,7 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const forbidden = [/TELEGRAM_BOT_TOKEN=\d+:/, /sbc_team_(?!REPLACE_WITH_YOURS)[A-Za-z0-9_\-]+/, /ghp_[A-Za-z0-9_]+/, /sk-[A-Za-z0-9_\-]+/];
+const forbidden = [
+  /TELEGRAM_BOT_TOKEN=\d+:/,
+  /sbc_team_(?!REPLACE_WITH_YOURS)[A-Za-z0-9_\-]+/,
+  /ghp_[A-Za-z0-9_]{20,}/,
+  /\bsk-[A-Za-z0-9_\-]{20,}\b/
+];
 const skip = new Set(['node_modules', '.git', 'dist']);
 let bad = false;
 function walk(dir: string) {

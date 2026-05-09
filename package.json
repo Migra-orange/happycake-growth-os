@@ -21,23 +21,24 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "concurrently": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "typescript": "latest",
     "tsx": "latest",
-    "express": "latest",
-    "zod": "latest",
-    "dotenv": "latest",
-    "concurrently": "latest",
-    "cors": "latest"
+    "typescript": "latest",
+    "vite": "latest",
+    "zod": "latest"
   },
   "devDependencies": {
+    "@types/cors": "latest",
     "@types/express": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "@types/cors": "latest",
+    "@vercel/node": "^5.7.16",
     "vitest": "latest"
   }
 }
