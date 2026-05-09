@@ -9,6 +9,7 @@ type Dashboard = { ok:boolean; mode:string; updatedAt:string; storageMode?:strin
 type AgentConfig = { id:string; name:string; enabled:boolean; mode:string; tone:string; dailyLimit:number; goal:string };
 type AutopilotEvent = { type:string; label:string; summary:string; status:string };
 type ApprovalQueueItem = { approvalId:string; intentId:string; customer:string; status:string; riskFlags:string[]; policyDecision:string; summary:string; proposedSideEffects:string[]; expiresIn:string; decisionAt?:string; decisionSource?:string; executedSideEffects?:string[] };
+type AgentConfigResponse = { ok:boolean; agents:AgentConfig[]; version:number; updatedAt:string; storageMode:string; durableConfigured:boolean; ownerAuthEnabled:boolean };
 
 const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
@@ -53,6 +54,7 @@ export default function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [agentDrafts, setAgentDrafts] = useState<AgentConfig[]>([]);
   const [configSaved, setConfigSaved] = useState(false);
+  const [configStatus, setConfigStatus] = useState('loading server config');
 
   useEffect(() => {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
@@ -68,10 +70,19 @@ export default function App() {
   async function refreshDashboard() {
     try {
       const d:Dashboard = await fetch(`${API}/api/owner/dashboard`).then(r => r.json());
+      setDashboard(d);
+      try {
+        const cfg:AgentConfigResponse = await fetch(`${API}/api/owner/config`).then(r => r.json());
+        if (cfg.ok) {
+          setAgentDrafts(cfg.agents);
+          setConfigStatus(`${cfg.storageMode}${cfg.durableConfigured ? ' · durable' : ' · demo memory'}${cfg.ownerAuthEnabled ? ' · owner auth on' : ' · owner auth off'}`);
+          return;
+        }
+      } catch {}
       const saved = localStorage.getItem('happycake-agent-config');
       const agents = saved ? JSON.parse(saved) : d.agents;
-      setDashboard(d);
       setAgentDrafts(agents);
+      setConfigStatus('local draft fallback');
     } catch {}
   }
 
@@ -153,8 +164,18 @@ export default function App() {
     setAgentDrafts(list => list.map(a => a.id === id ? { ...a, ...patch } : a));
   }
 
-  function saveAgentConfig() {
-    localStorage.setItem('happycake-agent-config', JSON.stringify(agentDrafts));
+  async function saveAgentConfig() {
+    try {
+      const res = await fetch(`${API}/api/owner/config`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agents: agentDrafts }) });
+      const data:AgentConfigResponse = await res.json();
+      if (!res.ok || !data.ok) throw new Error('config_save_failed');
+      setAgentDrafts(data.agents);
+      setConfigStatus(`${data.storageMode}${data.durableConfigured ? ' · durable' : ' · demo memory'}${data.ownerAuthEnabled ? ' · owner auth on' : ' · owner auth off'}`);
+      localStorage.removeItem('happycake-agent-config');
+    } catch {
+      localStorage.setItem('happycake-agent-config', JSON.stringify(agentDrafts));
+      setConfigStatus('local draft fallback');
+    }
     setConfigSaved(true);
     window.setTimeout(() => setConfigSaved(false), 2200);
   }
@@ -322,7 +343,7 @@ export default function App() {
       <section className="agentConsole">
         <div className="sectionHeader">
           <div><p className="eyebrow">Agent configuration</p><h2>Control how the AI sells.</h2></div>
-          <button className="primary" onClick={saveAgentConfig}>{configSaved ? 'Saved locally' : 'Save config draft'}</button>
+          <button className="primary" onClick={saveAgentConfig}>{configSaved ? 'Saved' : 'Save config'}</button>
         </div>
         <div className="agentGrid">{agentDrafts.map(agent => <article className={agent.enabled ? 'agentCard enabled' : 'agentCard'} key={agent.id}>
           <div className="agentTop"><div><small>{agent.id}</small><h3>{agent.name}</h3></div><label className="switch"><input type="checkbox" checked={agent.enabled} onChange={e => updateAgent(agent.id, { enabled: e.target.checked })} /><span /></label></div>
@@ -331,7 +352,7 @@ export default function App() {
           <label>Daily limit <input type="number" min="0" value={agent.dailyLimit} onChange={e => updateAgent(agent.id, { dailyLimit: Number(e.target.value) })} /></label>
           <label>Goal <textarea value={agent.goal} onChange={e => updateAgent(agent.id, { goal: e.target.value })} /></label>
         </article>)}</div>
-        <p className="configNote">This is an owner-safe config draft UI. Production wiring should save these settings server-side behind owner auth before agents execute changes automatically.</p>
+        <p className="configNote">Config storage: {configStatus}. Agents still require owner approval before POS/kitchen or customer-impacting side effects.</p>
       </section>
     </>}
 
