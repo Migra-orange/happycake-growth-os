@@ -205,3 +205,11 @@ main { min-height: 100vh; overflow: hidden; }
 .agentConsole .configNote { color: rgba(255,247,234,.66); margin: 18px 0 0; }
 @media (max-width: 1040px) { .kpiGrid { grid-template-columns: repeat(2, 1fr); } .dashboardGrid, .agentGrid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .ownerDashboard, .agentConsole { width: min(100% - 24px, 1240px); } .kpiGrid, .channelGrid { grid-template-columns: 1fr; } .rankList div { grid-template-columns: 34px 1fr; } .rankList em { grid-column: 2; } }
+
+/* Owner dashboard compact above-the-fold pass */
+.ownerHero.dashboardHero { margin-top: 28px; padding: clamp(24px, 4vw, 42px); align-items: stretch; }
+.dashboardHero h1 { font-size: clamp(3.3rem, 6.8vw, 6.8rem); }
+.dashboardHero .lead { font-size: clamp(17px, 1.6vw, 20px); max-width: 760px; }
+.liveCard { min-height: 220px; }
+.liveCard b { font-size: clamp(2.5rem, 4.8vw, 4.8rem); }
+.ownerDashboard { margin-top: 28px; }
