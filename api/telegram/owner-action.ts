@@ -6,6 +6,19 @@ function token() {
   return process.env.HAPPYCAKE_MCP_TEAM_TOKEN || process.env.HAPPYCAKE_TEAM_TOKEN;
 }
 
+function mcpEnvelope(tool: string, input: Record<string, unknown>) {
+  return {
+    jsonrpc: '2.0',
+    id: `hc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`,
+    method: 'tools/call',
+    params: { name: tool, arguments: input }
+  };
+}
+
+function hasJsonRpcError(data: Record<string, unknown>) {
+  return Boolean(data && typeof data === 'object' && 'error' in data);
+}
+
 async function callMcp(tool: string, input: Record<string, unknown>) {
   const started = Date.now();
   const teamToken = token();
@@ -16,11 +29,12 @@ async function callMcp(tool: string, input: Record<string, unknown>) {
   const upstream = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Team-Token': teamToken },
-    body: JSON.stringify({ tool, input })
+    body: JSON.stringify(mcpEnvelope(tool, input))
   });
-  if (!upstream.ok && process.env.MCP_MODE === 'live') throw new Error(`mcp_${tool}_failed`);
-  if (!upstream.ok) return { ok: true, source: 'simulated', tool, latencyMs: Date.now() - started };
-  return { ok: true, source: 'mcp', tool, latencyMs: Date.now() - started };
+  const data = await upstream.json().catch(() => ({ raw: 'non_json_response' })) as Record<string, unknown>;
+  if ((!upstream.ok || hasJsonRpcError(data)) && process.env.MCP_MODE === 'live') throw new Error(`mcp_${tool}_failed`);
+  if (!upstream.ok || hasJsonRpcError(data)) return { ok: true, source: 'simulated', tool, latencyMs: Date.now() - started, data };
+  return { ok: true, source: 'mcp', tool, latencyMs: Date.now() - started, data };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

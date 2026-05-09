@@ -8,6 +8,19 @@ const guardrails = [
   'Ready-made classic cakes first; decoration is limited and optional.'
 ];
 
+function mcpEnvelope(tool: string, input: Record<string, unknown>) {
+  return {
+    jsonrpc: '2.0',
+    id: `hc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`,
+    method: 'tools/call',
+    params: { name: tool, arguments: input }
+  };
+}
+
+function hasJsonRpcError(data: Record<string, unknown>) {
+  return Boolean(data && typeof data === 'object' && 'error' in data);
+}
+
 const requiredEvents = [
   'lead_received',
   'mcp_tool_called',
@@ -60,11 +73,11 @@ async function callMcp(tool: McpTool, input: Record<string, unknown>): Promise<M
     const upstream = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Team-Token': teamToken },
-      body: JSON.stringify({ tool, input })
+      body: JSON.stringify(mcpEnvelope(tool, input))
     });
     const data = await upstream.json().catch(() => ({ raw: 'non_json_response' })) as Record<string, unknown>;
-    if (!upstream.ok && process.env.MCP_MODE === 'live') throw new Error(`mcp_${tool}_failed`);
-    if (!upstream.ok) return { ok: true, source: 'simulated', tool, data: { ...simulatedData(tool, input), fallback: 'mcp_non_2xx' }, latencyMs: Date.now() - started };
+    if ((!upstream.ok || hasJsonRpcError(data)) && process.env.MCP_MODE === 'live') throw new Error(`mcp_${tool}_failed`);
+    if (!upstream.ok || hasJsonRpcError(data)) return { ok: true, source: 'simulated', tool, data: { ...simulatedData(tool, input), fallback: 'mcp_jsonrpc_or_http_error', upstream: data }, latencyMs: Date.now() - started };
     return { ok: true, source: 'mcp', tool, data, latencyMs: Date.now() - started };
   } catch {
     if (process.env.MCP_MODE === 'live') throw new Error(`mcp_${tool}_failed`);

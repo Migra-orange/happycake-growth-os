@@ -6,6 +6,19 @@ function token() {
   return process.env.HAPPYCAKE_MCP_TEAM_TOKEN || process.env.HAPPYCAKE_TEAM_TOKEN;
 }
 
+function mcpEnvelope(tool: string, input: Record<string, unknown>) {
+  return {
+    jsonrpc: '2.0',
+    id: `hc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`,
+    method: 'tools/call',
+    params: { name: tool, arguments: input }
+  };
+}
+
+function hasJsonRpcError(data: Record<string, unknown>) {
+  return Boolean(data && typeof data === 'object' && 'error' in data);
+}
+
 function simulated() {
   return {
     ok: true,
@@ -31,11 +44,12 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     const upstream = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Team-Token': teamToken },
-      body: JSON.stringify({ tool: 'square_list_catalog', input: { smoke: true } })
+      body: JSON.stringify(mcpEnvelope('square_list_catalog', { smoke: true }))
     });
     const data = await upstream.json().catch(() => ({ raw: 'non_json_response' }));
-    return res.status(upstream.ok ? 200 : 502).json({
-      ok: upstream.ok,
+    const ok = upstream.ok && !hasJsonRpcError(data);
+    return res.status(ok ? 200 : 502).json({
+      ok,
       source: 'mcp',
       tool: 'square_list_catalog',
       data,

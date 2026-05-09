@@ -42,11 +42,17 @@ export async function callMcp(tool: McpToolName | string, payload: Record<string
           'Content-Type': 'application/json',
           'X-Team-Token': token
         },
-        body: JSON.stringify({ tool: parsedTool, input: payload })
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: `hc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`,
+          method: 'tools/call',
+          params: { name: parsedTool, arguments: payload }
+        })
       });
       const data = await res.json().catch(() => ({ raw: 'non_json_response' })) as Record<string, unknown>;
-      result = { ok: res.ok, source: 'mcp', tool: parsedTool, data };
-      if (!res.ok && process.env.MCP_MODE === 'live') throw new Error(`MCP ${parsedTool} failed with ${res.status}`);
+      const ok = res.ok && !(data && typeof data === 'object' && 'error' in data);
+      result = { ok, source: 'mcp', tool: parsedTool, data };
+      if (!ok && process.env.MCP_MODE === 'live') throw new Error(`MCP ${parsedTool} failed with ${res.status}`);
     } catch (error) {
       if (process.env.MCP_MODE === 'live') throw error;
       result = { ...simulatedMcp(parsedTool, payload), data: { ...simulatedMcp(parsedTool, payload).data, fallbackReason: error instanceof Error ? error.message : 'mcp_error' } };
