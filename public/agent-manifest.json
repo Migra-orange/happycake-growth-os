@@ -1,0 +1,45 @@
+{
+  "name": "HappyCake Growth OS",
+  "version": "0.1.0",
+  "pitch": "AI agents turn Sugar Land moments into HappyCake orders, repeat customers, and measurable $40k/month growth.",
+  "runtime": {
+    "llm": "claude-code-cli",
+    "command": "claude -p",
+    "ownerUi": "Telegram",
+    "fallback": "deterministic simulator for public evaluation without credentials"
+  },
+  "verticalSlice": "Local Campaign → Instagram/WhatsApp Lead → AI Sales → POS/Kitchen Handoff → Owner Telegram → Evidence Log",
+  "capabilities": [
+    "selling_storefront",
+    "agent_readable_catalog",
+    "onsite_assistant",
+    "whatsapp_instagram_order_intent",
+    "telegram_owner_approval",
+    "mcp_sandbox_adapter",
+    "evidence_logging",
+    "500_usd_marketing_plan"
+  ],
+  "endpoints": {
+    "health": "/health",
+    "assistant": "/api/assistant",
+    "ownerAction": "/api/telegram/owner-action",
+    "mcpSmoke": "/api/mcp/smoke",
+    "evidence": "/api/evidence",
+    "products": "/data/products.json",
+    "growthModel": "/data/growth-model.json"
+  },
+  "guardrails": [
+    "English only customer-facing copy",
+    "Spell HappyCake exactly",
+    "No invented prices, availability, hours, allergens, or delivery promises",
+    "Paid posts/ads require Telegram owner approval",
+    "Ready-made classic cakes first"
+  ],
+  "constraints": {
+    "noAgentSdk": true,
+    "noLangGraph": true,
+    "noCrewAI": true,
+    "noN8n": true,
+    "noAlternateCoreLlm": true
+  }
+}

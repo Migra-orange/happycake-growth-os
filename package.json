@@ -1,0 +1,43 @@
+{
+  "name": "happycake-growth-os",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "HappyCake Growth OS: local demand engine and AI sales operations system for Sugar Land.",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "tsx watch src/server/index.ts",
+    "dev:web": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "start:server": "tsx src/server/index.ts",
+    "assistant:test": "tsx scripts/assistant-test.ts",
+    "demo": "tsx scripts/demo.ts",
+    "evaluator:smoke": "tsx scripts/evaluator-smoke.ts",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "check:secrets": "tsx scripts/check-secrets.ts",
+    "verify": "npm run build && npm test && npm run assistant:test && npm run demo && npm run evaluator:smoke && npm run check:secrets"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "typescript": "latest",
+    "tsx": "latest",
+    "express": "latest",
+    "zod": "latest",
+    "dotenv": "latest",
+    "concurrently": "latest",
+    "cors": "latest"
+  },
+  "devDependencies": {
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@types/cors": "latest",
+    "vitest": "latest"
+  }
+}

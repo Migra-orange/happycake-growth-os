@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+coverage
+.hermes
+.claude/settings.local.json
+evidence/demo-run-*.json

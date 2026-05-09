@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-05-09T00:00:00.000Z",
+  "mode": "sample-simulated",
+  "verticalSlice": "Instagram/WhatsApp lead to owner/kitchen handoff",
+  "runtime": "claude-code-cli with simulated fallback",
+  "prompt": "I forgot a cake for our office birthday today. Can we pick something up after work?",
+  "result": {
+    "reply": "Hi. We can help you check today\u2019s bake. What time would you like to pick up, and how many people should it serve?",
+    "ownerSummary": "Same-day office order intent. Check catalog, inventory, kitchen capacity, then create POS/kitchen handoff."
+  }
+}

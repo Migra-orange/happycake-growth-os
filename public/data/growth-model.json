@@ -1,0 +1,83 @@
+{
+  "targetMonthlyRevenueUsd": 40000,
+  "currentRangeUsd": [
+    15000,
+    20000
+  ],
+  "incrementNeededUsd": 22000,
+  "revenueModel": [
+    {
+      "stream": "existing walk-ins and loyal repeat base",
+      "targetUsd": 18000,
+      "mechanism": "protect current demand and reduce missed replies"
+    },
+    {
+      "stream": "Google Maps/local search to same-day page",
+      "targetUsd": 7000,
+      "mechanism": "5 extra same-day orders/day \u00d7 26 days \u00d7 $55"
+    },
+    {
+      "stream": "WhatsApp/Instagram assisted order intent",
+      "targetUsd": 5000,
+      "mechanism": "fast replies, source-tagged DMs, clean handoff"
+    },
+    {
+      "stream": "office/school/church recurring orders",
+      "targetUsd": 7000,
+      "mechanism": "20 coordinator accounts \u00d7 $350/month"
+    },
+    {
+      "stream": "reminder/referral/review loop",
+      "targetUsd": 3000,
+      "mechanism": "box QR, occasion reminders, Google review lift"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "same-day",
+      "name": "On the Way Home Cakes",
+      "budgetUsd": 220,
+      "channels": [
+        "Google Business",
+        "Google Search",
+        "Instagram Stories"
+      ],
+      "promise": "Need dessert on the way home? Check today\u2019s bake.",
+      "kpi": "same-day order intent"
+    },
+    {
+      "id": "office-drop",
+      "name": "Friday Office Dessert Drop",
+      "budgetUsd": 120,
+      "channels": [
+        "Instagram",
+        "WhatsApp",
+        "owner outreach"
+      ],
+      "promise": "A warm dessert tray for the office before the weekend.",
+      "kpi": "recurring coordinator leads"
+    },
+    {
+      "id": "review-reminder",
+      "name": "Box QR Reminder Loop",
+      "budgetUsd": 60,
+      "channels": [
+        "packaging",
+        "WhatsApp"
+      ],
+      "promise": "Never forget a cake-worthy date again.",
+      "kpi": "saved occasions and reviews"
+    },
+    {
+      "id": "holiday-table",
+      "name": "Calendar Moment Tables",
+      "budgetUsd": 100,
+      "channels": [
+        "Meta boost",
+        "Google Business"
+      ],
+      "promise": "Mother\u2019s Day, Eid, graduation, back-to-school, Thanksgiving.",
+      "kpi": "holiday preorder intent"
+    }
+  ]
+}

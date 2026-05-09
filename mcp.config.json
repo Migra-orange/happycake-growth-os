@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "happycake": {
+      "url": "https://www.steppebusinessclub.com/api/mcp",
+      "headers": {
+        "X-Team-Token": "${HAPPYCAKE_TEAM_TOKEN}"
+      }
+    }
+  },
+  "notes": "Use with Claude Code CLI. Do not commit real team tokens. Simulator fallback keeps local demo runnable without MCP credentials."
+}
