@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import type { AssistantRequest, AssistantResponse } from '../shared/schema';
 import { simulateAssistant } from './simulator';
+import { callMcp } from './mcp';
 
 function shellQuoteForPrompt(value: string) {
   return value.replace(/[\u0000-\u001f]/g, ' ').slice(0, 4000);
@@ -26,11 +27,34 @@ function runClaude(prompt: string, timeoutMs: number): Promise<string> {
   });
 }
 
+async function runRequiredMcpTools(req: AssistantRequest) {
+  const text = req.message.toLowerCase();
+  const tools: Array<{ tool: string; input: Record<string, unknown> }> = [
+    { tool: 'square_list_catalog', input: { channel: req.channel, source: req.source, intent: req.message.slice(0, 240) } },
+    { tool: 'kitchen_get_production_summary', input: { urgency: /today|tonight|after work|now|forgot|last minute/.test(text) ? 'same_day' : 'standard' } }
+  ];
+  if (/office|school|church|team|company|staff|birthday/.test(text)) {
+    tools.push({ tool: 'marketing_create_campaign', input: { segment: 'local_coordinator', requiresOwnerApproval: true } });
+  }
+  if (req.channel === 'instagram') tools.push({ tool: 'instagram_send_reply', input: { dryRun: true, requiresOwnerApproval: req.requireOwnerApproval } });
+  if (req.channel === 'whatsapp') tools.push({ tool: 'whatsapp_send_reply', input: { dryRun: true, requiresOwnerApproval: req.requireOwnerApproval } });
+  return Promise.all(tools.map(t => callMcp(t.tool, t.input).catch(error => ({ ok: false, source: 'simulated' as const, tool: t.tool, data: { error: error instanceof Error ? error.message : 'unknown_mcp_error' } }))));
+}
+
 export async function runAssistant(req: AssistantRequest): Promise<AssistantResponse> {
   const mode = process.env.ASSISTANT_MODE || 'simulated';
   const timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS || 90000);
+  const mcpChecks = await runRequiredMcpTools(req);
+  const mcpActions = mcpChecks.map(check => ({
+    type: 'mcp_tool_check',
+    label: `MCP: ${check.tool}`,
+    detail: `${check.source} · ${check.ok ? 'ok' : 'failed'} · ${JSON.stringify(check.data).slice(0, 180)}`
+  }));
 
-  if (mode === 'simulated') return simulateAssistant(req);
+  if (mode === 'simulated') {
+    const simulated = simulateAssistant(req);
+    return { ...simulated, actions: [...mcpActions, ...simulated.actions] };
+  }
 
   try {
     const live = await runClaude(buildPrompt(req), timeoutMs);
@@ -40,10 +64,12 @@ export async function runAssistant(req: AssistantRequest): Promise<AssistantResp
       mode: 'live',
       usedFallback: false,
       reply: live,
-      ownerSummary: `Live Claude Code CLI response generated. ${simulated.ownerSummary}`
+      actions: [...mcpActions, ...simulated.actions],
+      ownerSummary: `Live Claude Code CLI response generated after MCP tool checks. ${simulated.ownerSummary}`
     };
   } catch (err) {
     if (mode === 'live') throw err;
-    return simulateAssistant(req);
+    const simulated = simulateAssistant(req);
+    return { ...simulated, actions: [...mcpActions, ...simulated.actions] };
   }
 }

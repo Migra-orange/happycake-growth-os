@@ -31,6 +31,9 @@ function simulate(body: any) {
         ? 'Urgent same-day lead from ' + channel + '. Needs source-of-truth inventory check and owner/kitchen confirmation before commitment.'
         : 'Warm lead from ' + channel + '. Collect occasion details and route to today’s source of truth.',
     actions: [
+      { type: 'mcp_tool_check', label: 'MCP: square_list_catalog', detail: 'simulated · ok · real sandbox uses X-Team-Token server-side' },
+      { type: 'mcp_tool_check', label: 'MCP: kitchen_get_production_summary', detail: 'simulated · ok · check capacity before promising same-day pickup' },
+      ...(isB2B ? [{ type: 'mcp_tool_check', label: 'MCP: marketing_create_campaign', detail: 'simulated · ok · draft campaign requires owner approval' }] : []),
       { type: 'lead_capture', label: 'Create lead', detail: isB2B ? 'office/school/church recurring funnel' : 'same-day ready-made cake funnel' },
       { type: 'source_of_truth_check', label: 'Check inventory/POS', detail: 'Do not invent price, pickup time, or availability.' },
       { type: 'telegram_card', label: 'Owner approval', detail: 'Owner approves campaign/order handoff in Telegram before publishing or confirming.' },
