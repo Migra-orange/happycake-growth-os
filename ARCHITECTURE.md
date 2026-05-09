@@ -14,10 +14,13 @@ Live path:
 
 ```text
 Customer / owner event
+→ channel adapter (website / Instagram / WhatsApp)
 → Node wrapper
-→ claude -p "task prompt"
 → MCP sandbox/source-of-truth checks
-→ customer reply + owner Telegram summary
+→ order-intent state machine
+→ Telegram owner approval
+→ sandbox Square order + kitchen ticket
+→ claude -p grounded customer reply in live mode
 → evidence log
 ```
 
@@ -107,7 +110,16 @@ Owner can:
 - `public/agent-manifest.json`: capabilities and runtime constraints.
 - `evidence/*.jsonl`: generated audit trail.
 
-## MCP tools expected
+## Implemented vertical-slice modules
+
+- `src/server/channels/types.ts` normalizes website, Instagram, and WhatsApp leads into one `LeadMessage` contract.
+- `src/server/mcp.ts` exposes a typed tool registry with real MCP mode and deterministic sandbox fixtures.
+- `src/server/orders/order-intent.ts` extracts product, occasion, pickup window, missing fields, and risk flags.
+- `src/server/orders/handoff.ts` creates Square and kitchen sandbox handoff after owner approval.
+- `src/server/telegram/cards.ts` renders/records Telegram owner approval cards.
+- `src/server/vertical-slice.ts` runs the evaluator path end to end and returns evidence.
+
+## MCP tools
 
 Configured endpoint:
 
@@ -140,7 +152,7 @@ Every important action records:
 Evaluator should be able to trace:
 
 ```text
-campaign → lead → assistant reply → order intent → owner approval → POS/kitchen handoff
+campaign → lead → MCP source checks → order intent → owner Telegram approval → POS/kitchen handoff → customer reply
 ```
 
 ## Boundaries

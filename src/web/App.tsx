@@ -40,8 +40,8 @@ export default function App() {
     setLoading(false);
   }
 
-  async function ownerApprove(action: 'approve' | 'reject') {
-    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, campaignId: 'office-drop', note: result?.ownerSummary || 'Owner reviewed campaign/lead.' }) });
+  async function ownerApprove(action: 'approve_order_handoff' | 'reject_campaign') {
+    const res = await fetch(`${API}/api/telegram/owner-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, intentId: result?.orderIntent?.intentId, approvalId: result?.requiredApprovals?.[0]?.approvalId, campaignId: 'office-drop', note: result?.ownerSummary || 'Owner reviewed campaign/lead.' }) });
     const data = await res.json();
     setOwnerResult(data.reply || JSON.stringify(data));
   }
@@ -76,7 +76,7 @@ export default function App() {
       </section>
 
       {result && <section className="replyPanel">
-        <div><span className={`badge ${result.mode}`}>{result.mode}{result.usedFallback ? ' demo' : ''}</span><h2>Customer sees this</h2><p>{result.reply}</p></div>
+        <div><span className={`badge ${result.mode}`}>{result.mode}{result.usedFallback ? ' demo' : ''}</span><h2>Customer sees this</h2><p>{result.reply}</p><small>Evidence run: {result.evidenceId}</small></div>
         <div><h2>What happens behind the scenes</h2><ul>{result.actions.map((a,i)=><li key={i}><b>{a.label}</b><span>{a.detail}</span></li>)}</ul></div>
       </section>}
 
@@ -101,7 +101,7 @@ export default function App() {
           ['Birthday reminder', 'Customer opted into date reminder', 'Future repeat order']
         ].map(([title, body, tag]) => <div className="leadItem" key={title}><div><b>{title}</b><span>{body}</span></div><small>{tag}</small></div>)}</div>
 
-        <div className="panel"><h2>Telegram approval card</h2><p>{result?.ownerSummary || 'Run a customer request first, then the owner sees the summary here.'}</p><div className="approvalButtons"><button onClick={() => ownerApprove('approve')}>Approve</button><button className="danger" onClick={() => ownerApprove('reject')}>Reject</button></div>{ownerResult && <p className="ownerToast">{ownerResult}</p>}</div>
+        <div className="panel"><h2>Telegram approval card</h2><p>{result?.ownerSummary || 'Run a customer request first, then the owner sees the summary here.'}</p><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Approve handoff</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Reject</button></div>{ownerResult && <p className="ownerToast">{ownerResult}</p>}</div>
 
         <div className="panel"><h2>$500 growth engine</h2>{growth?.campaigns.map(c => <div className="mini" key={c.id}><b>{c.name}</b><span>${c.budgetUsd} · {c.channels.join(', ')}</span><small>{c.promise}</small></div>)}</div>
       </section>

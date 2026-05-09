@@ -14,6 +14,7 @@
     "assistant:test": "tsx scripts/assistant-test.ts",
     "demo": "tsx scripts/demo.ts",
     "evaluator:smoke": "tsx scripts/evaluator-smoke.ts",
+    "verify:sandbox": "npm run demo && npm run evaluator:smoke",
     "test": "vitest run",
     "lint": "tsc --noEmit",
     "check:secrets": "tsx scripts/check-secrets.ts",

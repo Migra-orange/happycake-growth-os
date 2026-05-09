@@ -42,6 +42,8 @@ Open:
 ```bash
 npm run assistant:test
 npm run demo
+npm run evaluator:smoke
+npm run verify:sandbox
 npm run build
 npm test
 ```
@@ -50,17 +52,18 @@ The app uses **Claude Code CLI via `claude -p`** when available. If Claude or MC
 
 ## Main demo flow
 
-**Local Campaign → Instagram/WhatsApp Lead → AI Sales → POS/Kitchen Handoff → Owner Telegram → Evidence Log**
+**Local Campaign → Instagram/WhatsApp Lead → MCP Source Checks → AI Sales → Owner Telegram Approval → POS/Kitchen Handoff → Evidence Log**
 
 Example:
 
 1. Campaign: Friday Office Dessert Drop.
 2. Lead arrives from Instagram DM.
-3. Sales Concierge asks occasion, pickup time, headcount.
-4. Agent checks source-of-truth before promising availability.
-5. Order intent becomes POS/kitchen handoff.
-6. Owner receives Telegram summary / approval card.
-7. Evidence log records the whole path.
+3. Sales Concierge normalizes the lead and creates order intent.
+4. Agent checks source-of-truth through MCP before promising availability: catalog, inventory, hours, policies, allergens, kitchen.
+5. Owner receives Telegram approval card.
+6. Approval creates sandbox Square order and kitchen ticket.
+7. Customer reply is sent through the channel adapter.
+8. Evidence log records the whole path and `npm run evaluator:smoke` asserts the required timeline.
 
 ## Hackathon compliance
 

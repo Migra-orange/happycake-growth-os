@@ -1,15 +1,17 @@
 import { callMcp } from './mcp';
 
 export type OwnerActionRequest = {
-  action: 'approve_campaign' | 'reject_campaign' | 'daily_digest' | 'approve_post' | 'escalate_order';
+  action: 'approve_campaign' | 'reject_campaign' | 'daily_digest' | 'approve_post' | 'escalate_order' | 'approve_order_handoff';
   campaignId?: string;
+  intentId?: string;
+  approvalId?: string;
   note?: string;
 };
 
 export async function handleOwnerAction(req: OwnerActionRequest) {
   if (req.action === 'daily_digest') {
     return {
-      reply: 'Today: focus on On the Way Home Cakes, reply to DMs under 5 minutes, ask every happy pickup for a Google review.',
+      reply: 'Today: focus on same-day classics, reply to DMs under 5 minutes, ask every happy pickup for a Google review.',
       mcp: await callMcp('marketing_daily_report', { scope: 'happycake_growth_os' })
     };
   }
@@ -17,6 +19,12 @@ export async function handleOwnerAction(req: OwnerActionRequest) {
     return {
       reply: `Campaign ${req.campaignId || 'draft'} approved. It can now be published/simulated.`,
       mcp: await callMcp('marketing_create_campaign', { campaignId: req.campaignId, approvedByOwner: true, note: req.note })
+    };
+  }
+  if (req.action === 'approve_order_handoff') {
+    return {
+      reply: `Order handoff ${req.intentId || req.approvalId || 'draft'} approved in Telegram. Sandbox POS/kitchen actions may proceed.`,
+      mcp: await callMcp('owner_action_log', { ...req, approvedByOwner: true, sideEffects: ['square_create_order', 'kitchen_create_ticket'] })
     };
   }
   if (req.action === 'approve_post') {
