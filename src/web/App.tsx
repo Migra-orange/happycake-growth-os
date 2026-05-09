@@ -34,7 +34,7 @@ const actionLabels: Record<string, string> = {
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [growth, setGrowth] = useState<GrowthModel | null>(null);
-  const [view, setView] = useState<'shop' | 'owner'>('shop');
+  const [view, setView] = useState<'shop' | 'owner'>(() => (typeof window !== 'undefined' && (window.location.hash === '#owner' || window.location.search.includes('owner=1')) ? 'owner' : 'shop'));
   const [channel, setChannel] = useState<Channel>('website');
   const [name, setName] = useState('');
   const [selected, setSelected] = useState<Product | null>(null);
@@ -62,7 +62,8 @@ export default function App() {
       setAgentDrafts(agents);
     }).catch(() => {});
     const seen = localStorage.getItem('happycake-offer-seen');
-    const timer = window.setTimeout(() => { if (!seen) setWheelOpen(true); }, 850);
+    const ownerRoute = window.location.hash === '#owner' || window.location.search.includes('owner=1');
+    const timer = window.setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }, 850);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -144,8 +145,8 @@ export default function App() {
         <span><b>HappyCake</b><small>Sugar Land cake shop</small></span>
       </button>
       <div className="navActions">
-        <button className={view === 'shop' ? 'active' : 'ghost'} onClick={() => setView('shop')}>Shop cakes</button>
-        <button className={view === 'owner' ? 'active' : 'ghost'} onClick={() => setView('owner')}>Owner</button>
+        <button className={view === 'shop' ? 'active' : 'ghost'} onClick={() => { setView('shop'); history.replaceState(null, '', '/'); }}>Shop cakes</button>
+        <button className={view === 'owner' ? 'active' : 'ghost'} onClick={() => { setView('owner'); history.replaceState(null, '', '#owner'); }}>Owner</button>
       </div>
     </nav>
 
