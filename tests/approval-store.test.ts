@@ -5,7 +5,7 @@ import {
   listActiveApprovals,
   rejectRecord,
   upsertApprovalRecord
-} from '../src/server/autopilot/approval-store';
+} from '../api/_lib/approval-store';
 
 describe('approval queue store', () => {
   it('keeps pending approvals queryable without duplicating the same approval id', () => {
@@ -25,8 +25,9 @@ describe('approval queue store', () => {
 
     upsertApprovalRecord(store, { ...record, summary: 'Updated owner summary.' });
 
-    expect(listActiveApprovals(store)).toHaveLength(1);
-    expect(listActiveApprovals(store)[0]).toMatchObject({
+    const active = listActiveApprovals(store, new Date('2026-05-09T21:00:00.000Z'));
+    expect(active).toHaveLength(1);
+    expect(active[0]).toMatchObject({
       approvalId: 'own_test_001',
       status: 'pending',
       summary: 'Updated owner summary.',
@@ -54,7 +55,8 @@ describe('approval queue store', () => {
 
     expect(approved.status).toBe('approved');
     expect(approvedAgain.executedSideEffects).toEqual(['square_create_order', 'kitchen_create_ticket']);
-    expect(listActiveApprovals(store)[0].status).toBe('approved');
+    const activeAfterApproval = listActiveApprovals(store, new Date('2026-05-09T21:00:00.000Z'));
+    expect(activeAfterApproval[0].status).toBe('approved');
 
     const rejected = rejectRecord(store, 'own_test_002', 'owner changed mind');
     expect(rejected.status).toBe('approved');

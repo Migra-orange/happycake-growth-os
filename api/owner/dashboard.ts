@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { approvalExpiresIn, createEmptyApprovalStore, listActiveApprovals, seedDemoApprovals, type ApprovalStore } from '../../src/server/autopilot/approval-store';
+import { approvalExpiresIn, createEmptyApprovalStore, listActiveApprovals, seedDemoApprovals, type ApprovalStore } from '../_lib/approval-store';
 
 type Json = Record<string, unknown>;
 

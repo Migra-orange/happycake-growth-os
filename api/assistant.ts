@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createEmptyApprovalStore, seedDemoApprovals, upsertApprovalRecord, type ApprovalStore } from '../src/server/autopilot/approval-store';
+import { createEmptyApprovalStore, seedDemoApprovals, upsertApprovalRecord, type ApprovalStore } from './_lib/approval-store';
 
 
 type GlobalWithApprovalStore = typeof globalThis & { __happycakeApprovalStore?: ApprovalStore };
