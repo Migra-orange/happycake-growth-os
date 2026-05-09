@@ -13,7 +13,7 @@ describe('sandbox product vertical slice', () => {
       customerHandle: '@maya.office',
       source: 'Friday Office Dessert Drop',
       message: 'Can I order cake "Honey" for our office birthday today and pick it up after work?',
-      approveOwnerAction: true
+      autoApproveForDemoOnly: true
     });
 
     expect(result.summary.ok).toBe(true);

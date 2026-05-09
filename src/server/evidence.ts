@@ -6,7 +6,7 @@ import type { EvidenceEvent } from '../shared/schema';
 const evidenceDir = path.resolve(process.cwd(), 'evidence');
 const memoryEvents = new Map<string, EvidenceEvent[]>();
 
-export const REQUIRED_TIMELINE = [
+export const APPROVED_HANDOFF_TIMELINE = [
   'lead_received',
   'mcp_tool_called',
   'source_checked',
@@ -17,6 +17,17 @@ export const REQUIRED_TIMELINE = [
   'kitchen_ticket_created',
   'customer_reply_sent'
 ] as const;
+
+export const APPROVAL_PENDING_TIMELINE = [
+  'lead_received',
+  'mcp_tool_called',
+  'source_checked',
+  'order_intent_created',
+  'owner_approval_requested',
+  'customer_reply_sent'
+] as const;
+
+export const REQUIRED_TIMELINE = APPROVED_HANDOFF_TIMELINE;
 
 export function getRequiredTimeline() {
   return [...REQUIRED_TIMELINE];
@@ -70,10 +81,10 @@ export function readEvidenceRun(demoRunId: string): EvidenceEvent[] {
   return fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line) as EvidenceEvent);
 }
 
-export function hasRequiredTimeline(events: EvidenceEvent[]) {
+function containsTimeline(events: EvidenceEvent[], requiredTimeline: readonly string[]) {
   const types = events.map((event) => event.type);
   let cursor = 0;
-  for (const required of REQUIRED_TIMELINE) {
+  for (const required of requiredTimeline) {
     const foundAt = types.indexOf(required, cursor);
     if (foundAt === -1) return false;
     cursor = foundAt + 1;
@@ -81,14 +92,25 @@ export function hasRequiredTimeline(events: EvidenceEvent[]) {
   return true;
 }
 
+export function hasRequiredTimeline(events: EvidenceEvent[]) {
+  return containsTimeline(events, APPROVED_HANDOFF_TIMELINE) || containsTimeline(events, APPROVAL_PENDING_TIMELINE);
+}
+
+export function getTimelineVariant(events: EvidenceEvent[]) {
+  if (containsTimeline(events, APPROVED_HANDOFF_TIMELINE)) return 'approved_handoff';
+  if (containsTimeline(events, APPROVAL_PENDING_TIMELINE)) return 'approval_pending';
+  return 'incomplete';
+}
+
 export function summarizeTimeline(demoRunId: string) {
   const events = readEvidenceRun(demoRunId);
   return {
     demoRunId,
     ok: hasRequiredTimeline(events),
-    requiredEvents: getRequiredTimeline(),
+    variant: getTimelineVariant(events),
+    requiredEvents: getTimelineVariant(events) === 'approval_pending' ? [...APPROVAL_PENDING_TIMELINE] : getRequiredTimeline(),
     presentEvents: events.map((event) => event.type),
-    missingEvents: getRequiredTimeline().filter((type) => !events.some((event) => event.type === type)),
+    missingEvents: (getTimelineVariant(events) === 'approval_pending' ? [...APPROVAL_PENDING_TIMELINE] : getRequiredTimeline()).filter((type) => !events.some((event) => event.type === type)),
     events
   };
 }

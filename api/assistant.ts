@@ -27,9 +27,6 @@ const requiredEvents = [
   'source_checked',
   'order_intent_created',
   'owner_approval_requested',
-  'owner_approved',
-  'pos_order_created',
-  'kitchen_ticket_created',
   'customer_reply_sent'
 ];
 
@@ -141,8 +138,8 @@ function detailFor(type: string, channel: string, intentId: string, sourceSummar
     order_intent_created: `Order intent ${intentId} created.`,
     owner_approval_requested: 'Telegram owner approval card created.',
     owner_approved: 'Owner approval required before side effects.',
-    pos_order_created: 'POS handoff waits for owner approval.',
-    kitchen_ticket_created: 'Kitchen ticket waits for owner approval.',
+    pos_order_created: 'POS handoff waits for explicit owner approval.',
+    kitchen_ticket_created: 'Kitchen ticket waits for explicit owner approval.',
     customer_reply_sent: `Reply prepared for ${channel} adapter.`
   };
   return map[type] || type;

@@ -1,13 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import type { AssistantRequest, AssistantResponse, EvidenceEvent, LeadMessage, McpResult } from '../shared/schema';
-import { appendEvidence, getRequiredTimeline, hasRequiredTimeline, readEvidenceRun } from './evidence';
+import type { AssistantRequest, AssistantResponse, EvidenceEvent, LeadMessage, McpResult, OwnerApproval } from '../shared/schema';
+import { appendEvidence, getRequiredTimeline, getTimelineVariant, hasRequiredTimeline, readEvidenceRun } from './evidence';
 import { callMcp } from './mcp';
 import { createOrderIntent, customerReplyForIntent } from './orders/order-intent';
 import { createSandboxHandoff, runSourceChecks } from './orders/handoff';
-import { approveOwnerAction, buildOwnerApproval, requestOwnerApproval } from './telegram/cards';
+import { approveOwnerAction, requestOwnerApproval } from './telegram/cards';
+import { createApprovalRecord, createAutopilotTimeline } from './autopilot/state-machine';
+import { evaluatePolicy } from './autopilot/policy-engine';
 import { leadToAssistantRequest, normalizeLead } from './channels/types';
 
-type SliceInput = Partial<LeadMessage> & { message: string; approveOwnerAction?: boolean; demoRunId?: string };
+type SliceInput = Partial<LeadMessage> & { message: string; requiresOwnerApproval?: boolean; autoApproveForDemoOnly?: boolean; approveOwnerAction?: boolean; demoRunId?: string; offerCode?: string };
 
 export async function runSandboxVerticalSlice(input: SliceInput) {
   const demoRunId = input.demoRunId || `demo-run-${new Date().toISOString().replace(/[:.]/g, '-')}`;
@@ -43,13 +45,27 @@ export async function runSandboxVerticalSlice(input: SliceInput) {
   });
 
   intent.state = 'owner_approval_pending';
-  const approval = buildOwnerApproval(intent, mcpChecks.map((check) => `${check.tool}:${check.source}:${check.ok ? 'ok' : 'failed'}`));
+  const policyDecision = evaluatePolicy(intent, { action: 'create_order' });
+  const approval = createApprovalRecord(intent, ['square_create_order', 'kitchen_create_ticket', 'send customer reply through source channel']);
+  let timeline = createAutopilotTimeline({
+    intent,
+    approval,
+    offerCode: input.offerCode,
+    mcpChecks: mcpChecks.map((check) => `${check.tool}:${check.source}:${check.ok ? 'ok' : 'failed'}`)
+  });
   await requestOwnerApproval(approval, demoRunId);
 
-  let approved = approval;
+  let approved: typeof approval | OwnerApproval = approval;
   let handoff: Awaited<ReturnType<typeof createSandboxHandoff>> | undefined;
-  if (input.approveOwnerAction !== false) {
+  const shouldAutoApprove = input.autoApproveForDemoOnly === true || (input.approveOwnerAction === true && input.requiresOwnerApproval !== true);
+  if (shouldAutoApprove && policyDecision.decision !== 'block') {
     approved = await approveOwnerAction(approval, demoRunId);
+    timeline = createAutopilotTimeline({
+      intent,
+      approval: approved,
+      offerCode: input.offerCode,
+      mcpChecks: mcpChecks.map((check) => `${check.tool}:${check.source}:${check.ok ? 'ok' : 'failed'}`)
+    });
     intent.state = 'owner_approved';
     handoff = await createSandboxHandoff(intent, { demoRunId, channel: lead.channel });
     appendEvidence({
@@ -98,8 +114,11 @@ export async function runSandboxVerticalSlice(input: SliceInput) {
     handoff,
     customerReply,
     events,
+    autopilotTimeline: timeline,
+    policyDecision,
     summary: {
       ok: hasRequiredTimeline(events),
+      variant: getTimelineVariant(events),
       orderState: intent.state,
       requiredEvents: getRequiredTimeline(),
       presentEvents: events.map((event: EvidenceEvent) => event.type),
@@ -118,7 +137,7 @@ export async function runAssistantVerticalSlice(req: AssistantRequest): Promise<
     source: req.source,
     message: req.message,
     demoRunId: req.demoRunId,
-    approveOwnerAction: req.requireOwnerApproval
+    requiresOwnerApproval: req.requireOwnerApproval
   });
   return {
     mode: process.env.ASSISTANT_MODE === 'live' ? 'live' : 'simulated',

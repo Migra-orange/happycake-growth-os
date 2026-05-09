@@ -5,8 +5,10 @@ type Product = { id:string; name:string; shortName:string; priceUsd:number; weig
 type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
 type Offer = { label:string; value:string; code:string; angle:string };
-type Dashboard = { ok:boolean; mode:string; updatedAt:string; metrics:Record<string, number>; funnel:{label:string;value:number}[]; channels:{label:string;orders:number;revenueUsd:number}[]; topProducts:{name:string;orders:number;revenueUsd:number}[]; mcpChecks:{ok:boolean;source:string;tool:string;latencyMs:number}[]; agents:AgentConfig[] };
+type Dashboard = { ok:boolean; mode:string; updatedAt:string; metrics:Record<string, number>; funnel:{label:string;value:number}[]; channels:{label:string;orders:number;revenueUsd:number}[]; topProducts:{name:string;orders:number;revenueUsd:number}[]; mcpChecks:{ok:boolean;source:string;tool:string;latencyMs:number}[]; agents:AgentConfig[]; autopilotTimeline?:AutopilotEvent[]; approvalQueue?:ApprovalQueueItem[] };
 type AgentConfig = { id:string; name:string; enabled:boolean; mode:string; tone:string; dailyLimit:number; goal:string };
+type AutopilotEvent = { type:string; label:string; summary:string; status:string };
+type ApprovalQueueItem = { approvalId:string; intentId:string; customer:string; status:string; riskFlags:string[]; policyDecision:string; summary:string; proposedSideEffects:string[]; expiresIn:string };
 
 const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
@@ -240,8 +242,16 @@ export default function App() {
           </section>
 
           <section className="panel approvalInbox">
-            <div className="sectionHeader compact"><div><p className="eyebrow">Owner queue</p><h2>Approvals.</h2></div><span className="softBadge">Telegram style</span></div>
-            {result ? <div className="approvalCard"><b>{result.orderIntent?.customerName || 'Customer'} · {result.orderIntent?.channel}</b><p>{result.ownerSummary}</p><div className="approvalMeta"><span>Missing: {result.orderIntent?.requiredFieldsMissing?.join(', ') || 'none'}</span><span>Risks: {result.riskFlags?.join(', ') || 'none'}</span></div><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Approve handoff</button><button className="secondary" onClick={() => setShowTrail(true)}>Open proof</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Reject</button></div></div> : <div className="emptyState"><b>No live order selected.</b><p>Send an order from the shop to create an owner approval card here.</p><button onClick={() => setView('shop')}>Open shop</button></div>}
+            <div className="sectionHeader compact"><div><p className="eyebrow">Owner queue</p><h2>Approvals.</h2></div><span className="softBadge">Policy gated</span></div>
+            <div className="queueList">
+              {dashboard?.approvalQueue?.map(item => <article className="queueItem" key={item.approvalId}>
+                <div><b>{item.customer}</b><span>{item.status} · {item.expiresIn}</span></div>
+                <p>{item.summary}</p>
+                <small>{item.policyDecision} · risks: {item.riskFlags.join(', ') || 'none'}</small>
+                <em>{item.proposedSideEffects.join(' → ')}</em>
+              </article>)}
+            </div>
+            {result ? <div className="approvalCard"><b>{result.orderIntent?.customerName || 'Customer'} · {result.orderIntent?.channel}</b><p>{result.ownerSummary}</p><div className="approvalMeta"><span>Missing: {result.orderIntent?.requiredFieldsMissing?.join(', ') || 'none'}</span><span>Risks: {result.riskFlags?.join(', ') || 'none'}</span></div><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Approve handoff</button><button className="secondary" onClick={() => setShowTrail(true)}>Open proof</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Reject</button></div></div> : <div className="emptyState"><b>Autopilot queue is live.</b><p>Send an order from the shop to create a fresh owner approval card here.</p><button onClick={() => setView('shop')}>Open shop</button></div>}
             {ownerResult && <p className="ownerToast">{ownerResult}</p>}
           </section>
 
@@ -254,6 +264,19 @@ export default function App() {
             <div className="sectionHeader compact"><div><p className="eyebrow">Channels</p><h2>Demand sources.</h2></div></div>
             <div className="channelGrid">{dashboard?.channels?.map(c => <article key={c.label}><b>{c.label}</b><span>{c.orders} orders</span><strong>${c.revenueUsd}</strong></article>)}</div>
           </section>
+        </div>
+      </section>
+
+      <section className="autopilotPanel">
+        <div className="sectionHeader">
+          <div><p className="eyebrow">Autopilot engine</p><h2>The funnel runs as a guarded state machine.</h2></div>
+          <span className="softBadge">No POS/kitchen before approval</span>
+        </div>
+        <div className="autopilotTimeline">
+          {dashboard?.autopilotTimeline?.map(event => <article className={`autoStep ${event.status}`} key={event.type}>
+            <i />
+            <div><b>{event.label}</b><p>{event.summary}</p><small>{event.status}</small></div>
+          </article>)}
         </div>
       </section>
 
