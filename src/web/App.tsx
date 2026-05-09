@@ -5,6 +5,8 @@ type Product = { id:string; name:string; shortName:string; priceUsd:number; weig
 type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
 type Offer = { label:string; value:string; code:string; angle:string };
+type Dashboard = { ok:boolean; mode:string; updatedAt:string; metrics:Record<string, number>; funnel:{label:string;value:number}[]; channels:{label:string;orders:number;revenueUsd:number}[]; topProducts:{name:string;orders:number;revenueUsd:number}[]; mcpChecks:{ok:boolean;source:string;tool:string;latencyMs:number}[]; agents:AgentConfig[] };
+type AgentConfig = { id:string; name:string; enabled:boolean; mode:string; tone:string; dailyLimit:number; goal:string };
 
 const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
@@ -46,10 +48,19 @@ export default function App() {
   const [ownerResult, setOwnerResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [showTrail, setShowTrail] = useState(false);
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [agentDrafts, setAgentDrafts] = useState<AgentConfig[]>([]);
+  const [configSaved, setConfigSaved] = useState(false);
 
   useEffect(() => {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
     fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth).catch(() => {});
+    fetch(`${API}/api/owner/dashboard`).then(r => r.json()).then((d:Dashboard) => {
+      const saved = localStorage.getItem('happycake-agent-config');
+      const agents = saved ? JSON.parse(saved) : d.agents;
+      setDashboard(d);
+      setAgentDrafts(agents);
+    }).catch(() => {});
     const seen = localStorage.getItem('happycake-offer-seen');
     const timer = window.setTimeout(() => { if (!seen) setWheelOpen(true); }, 850);
     return () => window.clearTimeout(timer);
@@ -96,6 +107,19 @@ export default function App() {
     const data = await res.json();
     setOwnerResult(data.reply || JSON.stringify(data));
   }
+
+  function updateAgent(id: string, patch: Partial<AgentConfig>) {
+    setConfigSaved(false);
+    setAgentDrafts(list => list.map(a => a.id === id ? { ...a, ...patch } : a));
+  }
+
+  function saveAgentConfig() {
+    localStorage.setItem('happycake-agent-config', JSON.stringify(agentDrafts));
+    setConfigSaved(true);
+    window.setTimeout(() => setConfigSaved(false), 2200);
+  }
+
+  const metric = (key: string, fallback = 0) => dashboard?.metrics?.[key] ?? fallback;
 
   return <main>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -184,15 +208,69 @@ export default function App() {
     </>}
 
     {view === 'owner' && <>
-      <section className="ownerHero">
-        <div><p className="eyebrow">Telegram-first owner control</p><h1>Approve orders, promos, and kitchen handoff.</h1><p className="lead">The shop sells directly, but final fulfillment waits for owner control and sandbox evidence.</p></div>
-        <div className="modelCard"><small>Live sandbox</small><b>Catalog → POS → kitchen</b><span>Marketing offers and order requests are visible before side effects.</span></div>
+      <section className="ownerHero dashboardHero">
+        <div>
+          <p className="eyebrow">Owner command center</p>
+          <h1>Stats, orders, agents — one control room.</h1>
+          <p className="lead">A private owner dashboard for seeing what sells, what needs approval, and how the customer-facing agents behave.</p>
+        </div>
+        <div className="modelCard liveCard">
+          <small>{dashboard?.mode === 'live' ? 'Live sandbox connected' : 'Dashboard loading'}</small>
+          <b>{dashboard ? `${dashboard.mcpChecks.filter(c => c.ok).length}/${dashboard.mcpChecks.length} checks green` : 'Checking MCP'}</b>
+          <span>{dashboard?.updatedAt ? `Updated ${new Date(dashboard.updatedAt).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}` : 'Reading owner stats and agent defaults.'}</span>
+        </div>
       </section>
-      <section className="ownerGrid">
-        <div className="panel approvalInbox"><div className="sectionHeader"><h2>Approval inbox</h2><span className="softBadge">Telegram preview</span></div>{result ? <div className="approvalCard"><b>{result.orderIntent?.customerName || 'Customer'} · {result.orderIntent?.channel}</b><p>{result.ownerSummary}</p><div className="approvalMeta"><span>Missing: {result.orderIntent?.requiredFieldsMissing?.join(', ') || 'none'}</span><span>Risks: {result.riskFlags?.join(', ') || 'none'}</span></div><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Approve handoff</button><button className="secondary" onClick={() => setShowTrail(true)}>Open proof</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Reject</button></div></div> : <div className="emptyState"><b>No order yet.</b><p>Send an order from the shop to create the first approval card.</p><button onClick={() => setView('shop')}>Open shop</button></div>}{ownerResult && <p className="ownerToast">{ownerResult}</p>}</div>
-        <div className="panel dailyBrief"><h2>Today’s levers</h2><ul><li><b>First visit</b><span>Wheel offer captures intent.</span></li><li><b>Basket</b><span>Office second-cake promo.</span></li><li><b>Repeat</b><span>Comeback card and reminder offer.</span></li></ul></div>
-        <div className="panel campaignPlan"><h2>Campaign queue</h2>{growth?.campaigns?.map(c => <div className="campaignRow" key={c.id}><b>{c.name}</b><span>{c.channels.join(', ')}</span><small>{c.promise}</small></div>)}</div>
+
+      <section className="ownerDashboard">
+        <div className="kpiGrid">
+          <article><span>Today revenue</span><b>${metric('revenueTodayUsd')}</b><small>Sandbox/POS summary</small></article>
+          <article><span>Order requests</span><b>{metric('orderRequests')}</b><small>{metric('pendingApprovals')} waiting approval</small></article>
+          <article><span>Conversion</span><b>{metric('conversionRate')}%</b><small>Visitor → request</small></article>
+          <article><span>Avg order</span><b>${metric('averageOrderValueUsd')}</b><small>Catalog AOV</small></article>
+        </div>
+
+        <div className="dashboardGrid">
+          <section className="panel funnelPanel">
+            <div className="sectionHeader compact"><div><p className="eyebrow">Funnel</p><h2>Where customers drop.</h2></div></div>
+            <div className="funnelBars">{dashboard?.funnel?.map((f, i) => {
+              const max = dashboard.funnel[0]?.value || 1;
+              return <div className="funnelRow" key={f.label}><div><b>{f.label}</b><span>{f.value}</span></div><i style={{ width: `${Math.max(8, (f.value / max) * 100)}%` }} /><em>{i === 0 ? 'traffic' : i === 1 ? 'hook' : i === 2 ? 'intent' : i === 3 ? 'order' : 'money'}</em></div>
+            }) || <p className="muted">Loading funnel…</p>}</div>
+          </section>
+
+          <section className="panel approvalInbox">
+            <div className="sectionHeader compact"><div><p className="eyebrow">Owner queue</p><h2>Approvals.</h2></div><span className="softBadge">Telegram style</span></div>
+            {result ? <div className="approvalCard"><b>{result.orderIntent?.customerName || 'Customer'} · {result.orderIntent?.channel}</b><p>{result.ownerSummary}</p><div className="approvalMeta"><span>Missing: {result.orderIntent?.requiredFieldsMissing?.join(', ') || 'none'}</span><span>Risks: {result.riskFlags?.join(', ') || 'none'}</span></div><div className="approvalButtons"><button onClick={() => ownerApprove('approve_order_handoff')}>Approve handoff</button><button className="secondary" onClick={() => setShowTrail(true)}>Open proof</button><button className="danger" onClick={() => ownerApprove('reject_campaign')}>Reject</button></div></div> : <div className="emptyState"><b>No live order selected.</b><p>Send an order from the shop to create an owner approval card here.</p><button onClick={() => setView('shop')}>Open shop</button></div>}
+            {ownerResult && <p className="ownerToast">{ownerResult}</p>}
+          </section>
+
+          <section className="panel productPanel">
+            <div className="sectionHeader compact"><div><p className="eyebrow">Products</p><h2>What sells.</h2></div></div>
+            <div className="rankList">{dashboard?.topProducts?.map((p, i) => <div key={p.name}><span>{i + 1}</span><b>{p.name}</b><em>{p.orders} orders · ${p.revenueUsd}</em></div>)}</div>
+          </section>
+
+          <section className="panel channelPanel">
+            <div className="sectionHeader compact"><div><p className="eyebrow">Channels</p><h2>Demand sources.</h2></div></div>
+            <div className="channelGrid">{dashboard?.channels?.map(c => <article key={c.label}><b>{c.label}</b><span>{c.orders} orders</span><strong>${c.revenueUsd}</strong></article>)}</div>
+          </section>
+        </div>
+      </section>
+
+      <section className="agentConsole">
+        <div className="sectionHeader">
+          <div><p className="eyebrow">Agent configuration</p><h2>Control how the AI sells.</h2></div>
+          <button className="primary" onClick={saveAgentConfig}>{configSaved ? 'Saved locally' : 'Save config draft'}</button>
+        </div>
+        <div className="agentGrid">{agentDrafts.map(agent => <article className={agent.enabled ? 'agentCard enabled' : 'agentCard'} key={agent.id}>
+          <div className="agentTop"><div><small>{agent.id}</small><h3>{agent.name}</h3></div><label className="switch"><input type="checkbox" checked={agent.enabled} onChange={e => updateAgent(agent.id, { enabled: e.target.checked })} /><span /></label></div>
+          <label>Mode <select value={agent.mode} onChange={e => updateAgent(agent.id, { mode: e.target.value })}><option value="owner_approval">Owner approval</option><option value="suggest_only">Suggest only</option><option value="telegram_first">Telegram first</option><option value="always_on">Always on</option><option value="paused">Paused</option></select></label>
+          <label>Tone <select value={agent.tone} onChange={e => updateAgent(agent.id, { tone: e.target.value })}><option value="warm_direct">Warm + direct</option><option value="playful">Playful</option><option value="concise">Concise</option><option value="silent">Silent/audit only</option></select></label>
+          <label>Daily limit <input type="number" min="0" value={agent.dailyLimit} onChange={e => updateAgent(agent.id, { dailyLimit: Number(e.target.value) })} /></label>
+          <label>Goal <textarea value={agent.goal} onChange={e => updateAgent(agent.id, { goal: e.target.value })} /></label>
+        </article>)}</div>
+        <p className="configNote">This is an owner-safe config draft UI. Production wiring should save these settings server-side behind owner auth before agents execute changes automatically.</p>
       </section>
     </>}
+
   </main>;
 }

@@ -29,7 +29,7 @@ export async function runSandboxVerticalSlice(input: SliceInput) {
     type: 'source_checked',
     channel: lead.channel,
     entity_id: intent.intentId,
-    summary: `Catalog, inventory, hours, policy, allergen, and kitchen checks completed for ${intent.intentId}.`,
+    summary: `Catalog, POS summary, evaluator state, and kitchen capacity checks completed for ${intent.intentId}.`,
     data: { mcpChecks }
   });
 
