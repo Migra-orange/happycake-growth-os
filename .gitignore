@@ -12,3 +12,4 @@ evidence/demo-run-*.json
 evidence/*.jsonl
 !evidence/sample-assistant-run.json
 !evidence/README.md
+.vercel
