@@ -4,7 +4,7 @@ import { get as blobGet, put as blobPut } from '@vercel/blob';
 type StoredApprovalStatus = 'pending' | 'approved' | 'rejected' | 'clarification_requested' | 'scheduled';
 type StoredApprovalRecord = { approvalId:string; intentId:string; customer:string; status:StoredApprovalStatus; summary:string; riskFlags:string[]; policyDecision:string; proposedSideEffects:string[]; createdAt:string; expiresAt:string; decisionAt?:string; decisionSource?:'telegram'|'dashboard'|'demo'|'api'; decisionNote?:string; executedSideEffects:string[] };
 type ApprovalStore = { records: StoredApprovalRecord[] };
-type GlobalWithApprovalStore = typeof globalThis & { __happycakeApprovalStore?: ApprovalStore };
+type GlobalWithApprovalStore = typeof globalThis & { __happycakeApprovalStore?: ApprovalStore; __happycakeRateBuckets?: Record<string, { count:number; resetAt:number }> };
 function createEmptyApprovalStore(): ApprovalStore { return { records: [] }; }
 function upsertApprovalRecord(store: ApprovalStore, input: Omit<StoredApprovalRecord, 'executedSideEffects'> & { executedSideEffects?: string[] }) {
   const record: StoredApprovalRecord = { ...input, riskFlags: [...(input.riskFlags || [])], proposedSideEffects: [...(input.proposedSideEffects || [])], executedSideEffects: [...(input.executedSideEffects || [])] };
@@ -42,12 +42,29 @@ async function saveApprovalStore(store: ApprovalStore) {
   } catch { return false; }
 }
 
+async function sendTelegramOwnerCard(record: StoredApprovalRecord) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_OWNER_CHAT_ID;
+  if (!botToken || !chatId) return { ok: false, skipped: true, reason: 'telegram_not_configured' };
+  const text = `HappyCake approval needed\n${record.summary}\nRisks: ${record.riskFlags.join(', ') || 'none'}`;
+  const inline_keyboard = [[
+    { text: 'Approve handoff', callback_data: `hc:approve:${record.approvalId}` },
+    { text: 'Reject', callback_data: `hc:reject:${record.approvalId}` }
+  ]];
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, reply_markup: { inline_keyboard } })
+  });
+  return { ok: response.ok, skipped: false };
+}
+
 
 const guardrails = [
   'English only for customer-facing copy.',
   'Use HappyCake spelling exactly.',
   'Do not invent price, inventory, hours, allergens, delivery, or policies.',
-  'Owner approves side effects in Telegram.',
+  'Bakery confirms customer-impacting actions before fulfillment.',
   'Ready-made classic cakes first; decoration is limited and optional.'
 ];
 
@@ -81,6 +98,21 @@ type McpCall = { ok: boolean; source: 'mcp' | 'simulated'; tool: string; data: R
 
 function token() {
   return process.env.HAPPYCAKE_MCP_TEAM_TOKEN || process.env.HAPPYCAKE_TEAM_TOKEN;
+}
+
+function clientKey(req: VercelRequest) {
+  return String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim().slice(0, 80);
+}
+
+function checkRateLimit(req: VercelRequest, bucket = 'assistant', limit = 30, windowMs = 60_000) {
+  const globalStore = globalThis as GlobalWithApprovalStore;
+  const buckets = globalStore.__happycakeRateBuckets || (globalStore.__happycakeRateBuckets = {});
+  const key = `${bucket}:${clientKey(req)}`;
+  const now = Date.now();
+  const current = buckets[key];
+  if (!current || current.resetAt <= now) { buckets[key] = { count: 1, resetAt: now + windowMs }; return { ok: true, remaining: limit - 1, resetAt: buckets[key].resetAt }; }
+  current.count += 1;
+  return { ok: current.count <= limit, remaining: Math.max(0, limit - current.count), resetAt: current.resetAt };
 }
 
 function simulatedData(tool: string, input: Record<string, unknown>) {
@@ -164,6 +196,7 @@ async function runFlow(body: any) {
     expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString()
   });
   await saveApprovalStore(approvalStore);
+  const ownerDelivery = await sendTelegramOwnerCard(approvalRecord).catch(() => ({ ok: false, skipped: true, reason: 'telegram_send_failed' }));
 
   const sourceSummary = mcpChecks.every((c) => c.source === 'mcp') ? 'real Steppe MCP' : 'safe simulator fallback';
   const actions = requiredEvents.flatMap((type) => type === 'mcp_tool_called'
@@ -178,12 +211,13 @@ async function runFlow(body: any) {
     evidenceId,
     guardrails,
     reply: missing.length
-      ? `Hi${name ? ` ${name}` : ''}. Thank you for reaching out to HappyCake. Pick one cake from the menu and send your pickup window — the owner will confirm final availability, allergens, and pickup before fulfillment.`
-      : `Hi${name ? ` ${name}` : ''}. Your HappyCake request for ${productPreference} is queued. I matched it against the sandbox catalog, POS summary, and kitchen capacity. The owner still approves final pickup and handoff before fulfillment.`,
+      ? `Hi${name ? ` ${name}` : ''}. Thank you for reaching out to HappyCake. Pick one cake from the menu and send your pickup window — the bakery will confirm final availability, allergens, and pickup before fulfillment.`
+      : `Hi${name ? ` ${name}` : ''}. Your HappyCake request for ${productPreference} is queued. I checked the menu, order details, and bakery capacity. The bakery will confirm final pickup details before fulfillment.`,
     ownerSummary: `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/POS/kitchen/evaluator checks; owner approval required before POS/kitchen handoff.`,
     actions,
     orderIntent: { intentId, state: 'customer_reply_sent', channel, customerName: name, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: message, riskFlags, requiredFieldsMissing: missing },
     mcpChecks,
+    ownerDelivery,
     requiredApprovals: [{ approvalId: approvalRecord.approvalId, intentId, status: approvalRecord.status, ownerChannel: 'telegram', summary: approvalRecord.summary, sideEffectsIfApproved: ['square_create_order', 'kitchen_create_ticket', 'send customer reply'] }],
     riskFlags
   };
@@ -192,12 +226,12 @@ async function runFlow(body: any) {
 function detailFor(type: string, channel: string, intentId: string, sourceSummary: string) {
   const map: Record<string, string> = {
     lead_received: `Lead normalized from ${channel}.`,
-    source_checked: `Catalog, POS summary, evaluator state, and kitchen capacity were checked through ${sourceSummary}.`,
+    source_checked: 'Menu, order details, and bakery capacity were checked.',
     order_intent_created: `Order intent ${intentId} created.`,
-    owner_approval_requested: 'Telegram owner approval card created.',
-    owner_approved: 'Owner approval required before side effects.',
-    pos_order_created: 'POS handoff waits for explicit owner approval.',
-    kitchen_ticket_created: 'Kitchen ticket waits for explicit owner approval.',
+    owner_approval_requested: 'Bakery confirmation request created.',
+    owner_approved: 'Bakery confirmation required before fulfillment.',
+    pos_order_created: 'Order handoff waits for bakery confirmation.',
+    kitchen_ticket_created: 'Kitchen preparation waits for bakery confirmation.',
     customer_reply_sent: `Reply prepared for ${channel} adapter.`
   };
   return map[type] || type;
@@ -205,6 +239,8 @@ function detailFor(type: string, channel: string, intentId: string, sourceSummar
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+  const rate = checkRateLimit(req);
+  if (!rate.ok) return res.status(429).json({ error: 'rate_limited', resetAt: rate.resetAt });
   if (!req.body || typeof req.body.message !== 'string') return res.status(400).json({ error: 'invalid_request' });
   try {
     return res.status(200).json(await runFlow(req.body));

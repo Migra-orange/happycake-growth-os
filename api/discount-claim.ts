@@ -24,6 +24,19 @@ const BLOB_PATH = 'happycake/discount-claims.json';
 const VALID_DISCOUNTS = new Set([5, 10, 20, 50]);
 let memoryStore: DiscountClaimStore = { version: 1, updatedAt: new Date(0).toISOString(), claims: [] };
 
+type GlobalWithRateLimit = typeof globalThis & { __happycakeRateBuckets?: Record<string, { count:number; resetAt:number }> };
+function clientKey(req: VercelRequest) { return String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim().slice(0, 80); }
+function checkRateLimit(req: VercelRequest, bucket = 'public-capture', limit = 25, windowMs = 60_000) {
+  const globalStore = globalThis as GlobalWithRateLimit;
+  const buckets = globalStore.__happycakeRateBuckets || (globalStore.__happycakeRateBuckets = {});
+  const key = `${bucket}:${clientKey(req)}`;
+  const now = Date.now();
+  const current = buckets[key];
+  if (!current || current.resetAt <= now) { buckets[key] = { count: 1, resetAt: now + windowMs }; return { ok: true, remaining: limit - 1, resetAt: buckets[key].resetAt }; }
+  current.count += 1;
+  return { ok: current.count <= limit, remaining: Math.max(0, limit - current.count), resetAt: current.resetAt };
+}
+
 function cleanText(value: unknown, fallback = '') {
   return String(value || fallback).trim().replace(/\s+/g, ' ').slice(0, 120);
 }
@@ -138,6 +151,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Allow', 'GET, POST');
     return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   }
+  const rate = checkRateLimit(req, 'discount-claim', 25, 60_000);
+  if (!rate.ok) return res.status(429).json({ ok: false, error: 'rate_limited', resetAt: rate.resetAt });
 
   try {
     const claim = normalizeDiscountClaim(req.body || {});

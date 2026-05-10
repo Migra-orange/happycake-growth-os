@@ -6,7 +6,12 @@
     "llm": "claude-code-cli",
     "command": "claude -p",
     "ownerUi": "Telegram",
-    "fallback": "deterministic simulator for public evaluation without credentials"
+    "production": {
+      "mcp": "live Steppe MCP",
+      "usedFallback": false,
+      "proof": ["/api/mcp/smoke", "/api/mcp/audit", "/api/assistant"]
+    },
+    "localFallback": "deterministic simulator for credential-free local clone"
   },
   "verticalSlice": "Local Campaign → Instagram/WhatsApp Lead → AI Sales → POS/Kitchen Handoff → Owner Telegram → Evidence Log",
   "capabilities": [
@@ -20,11 +25,11 @@
     "500_usd_marketing_plan"
   ],
   "endpoints": {
-    "health": "/health",
+    "health": "/api/health",
     "assistant": "/api/assistant",
     "ownerAction": "/api/telegram/owner-action",
     "mcpSmoke": "/api/mcp/smoke",
-    "evidence": "/api/evidence",
+    "mcpAudit": "/api/mcp/audit",
     "products": "/data/products.json",
     "businessProfile": "/data/business-profile.json",
     "llmsTxt": "/llms.txt",

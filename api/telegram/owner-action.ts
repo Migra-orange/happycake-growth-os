@@ -5,6 +5,17 @@ type StoredApprovalStatus = 'pending' | 'approved' | 'rejected' | 'clarification
 type StoredApprovalRecord = { approvalId:string; intentId:string; customer:string; status:StoredApprovalStatus; summary:string; riskFlags:string[]; policyDecision:string; proposedSideEffects:string[]; createdAt:string; expiresAt:string; decisionAt?:string; decisionSource?:'telegram'|'dashboard'|'demo'|'api'; decisionNote?:string; executedSideEffects:string[] };
 type ApprovalStore = { records: StoredApprovalRecord[] };
 type GlobalWithApprovalStore = typeof globalThis & { __happycakeApprovalStore?: ApprovalStore };
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+function checkRateLimit(req: VercelRequest, key = 'owner-action', limit = 20) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const bucketKey = `${key}:${ip}`;
+  const now = Date.now();
+  const current = rateBuckets.get(bucketKey);
+  if (!current || current.resetAt < now) { rateBuckets.set(bucketKey, { count: 1, resetAt: now + 60_000 }); return true; }
+  if (current.count >= limit) return false;
+  current.count += 1;
+  return true;
+}
 function createEmptyApprovalStore(): ApprovalStore { return { records: [] }; }
 function upsertApprovalRecord(store: ApprovalStore, input: Omit<StoredApprovalRecord, 'executedSideEffects'> & { executedSideEffects?: string[] }) {
   const record: StoredApprovalRecord = { ...input, riskFlags: [...(input.riskFlags || [])], proposedSideEffects: [...(input.proposedSideEffects || [])], executedSideEffects: [...(input.executedSideEffects || [])] };
@@ -48,20 +59,7 @@ async function ensureApprovalRecord(body: any, intentId: string) {
   const store = await getApprovalStore();
   const found = findApproval(store, approvalId) || findApproval(store, intentId);
   if (found) return { store, approval: found };
-  const approval = upsertApprovalRecord(store, {
-    approvalId,
-    intentId,
-    customer: String(body?.customer || 'Website customer'),
-    status: 'pending',
-    summary: String(body?.note || 'Owner approval required before POS/kitchen handoff.'),
-    riskFlags: Array.isArray(body?.riskFlags) ? body.riskFlags.map(String) : [],
-    policyDecision: 'require_owner_approval',
-    proposedSideEffects: ['square_create_order', 'kitchen_create_ticket'],
-    createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString()
-  });
-  await saveApprovalStore(store);
-  return { store, approval };
+  throw new Error('approval_not_found');
 }
 
 const endpoint = process.env.HAPPYCAKE_MCP_URL || 'https://www.steppebusinessclub.com/api/mcp';
@@ -69,6 +67,7 @@ const endpoint = process.env.HAPPYCAKE_MCP_URL || 'https://www.steppebusinessclu
 function token() {
   return process.env.HAPPYCAKE_MCP_TEAM_TOKEN || process.env.HAPPYCAKE_TEAM_TOKEN;
 }
+
 
 function mcpEnvelope(tool: string, input: Record<string, unknown>) {
   return {
@@ -103,6 +102,7 @@ async function callMcp(tool: string, input: Record<string, unknown>) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+  if (!checkRateLimit(req)) return res.status(429).json({ error: 'rate_limited' });
   if (process.env.OWNER_API_TOKEN && req.headers['x-owner-token'] !== process.env.OWNER_API_TOKEN) {
     return res.status(401).json({ error: 'owner_auth_required' });
   }
@@ -112,6 +112,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { store, approval } = await ensureApprovalRecord(req.body, intentId);
+    if (approval.status === 'approved') {
+      const expectedReplaySideEffects = ['marketing_report_to_owner', ...(approval.proposedSideEffects || [])];
+      const missingSideEffects = expectedReplaySideEffects.filter(tool => !(approval.executedSideEffects || []).includes(tool));
+      const idempotentReplay = missingSideEffects.length === 0;
+      return res.status(200).json({ ok: true, idempotentReplay, approval, missingSideEffects, mcpCalls: [] });
+    }
+    if (approval.status === 'rejected') {
+      const missingSideEffects: string[] = [];
+      const idempotentReplay = true;
+      return res.status(200).json({ ok: true, idempotentReplay, approval, missingSideEffects, mcpCalls: [] });
+    }
+    if (approval.status !== 'pending' && !rejected) {
+      return res.status(409).json({ ok: false, error: 'approval_not_pending' });
+    }
     const mcpCalls = rejected
       ? [await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'rejected', note: req.body?.note || '' })]
       : [
@@ -131,9 +145,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : `Order handoff ${intentId} approved in Telegram. Sandbox POS/kitchen actions may proceed.`,
       evidenceId: `owner_${Date.now().toString(36)}`,
       approval: decidedApproval,
+      idempotentReplay: false,
       mcpCalls
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'approval_not_found') {
+      return res.status(404).json({ ok: false, error: 'approval_not_found' });
+    }
     return res.status(502).json({ ok: false, error: 'mcp_owner_action_failed' });
   }
 }

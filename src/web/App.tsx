@@ -36,8 +36,8 @@ const occasionTiles = [
 
 const landingHighlights = [
   'Shop by real cake menu',
-  'Pickup reviewed before confirmation',
-  'Instagram, map, and AI helper ready'
+  'Bakery confirmation before pickup',
+  'Instagram, map, and cake helper ready'
 ];
 
 const fallbackBusinessProfile: BusinessProfile = {
@@ -215,7 +215,7 @@ export default function App() {
   function startOrder(product: Product) {
     setSelected(product);
     setNote(`I would like ${product.name}${promoClaim ? ` with code ${promoClaim.promoCode}` : ''}.`);
-    document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
   }
 
   async function submitOrder() {
@@ -435,7 +435,7 @@ export default function App() {
       </section>
 
       <section className="landingSection occasionSection">
-        <div className="sectionHeader"><div><p className="eyebrow">Occasions</p><h2>Pick by moment, not just flavor.</h2></div><p>Borrowed from the best cake storefronts: shoppers need fast paths for birthdays, gifts, and office tables.</p></div>
+        <div className="sectionHeader"><div><p className="eyebrow">Occasions</p><h2>Pick by moment, not just flavor.</h2></div><p>Fast paths for birthdays, gifts, and office tables — choose the cake first, then send pickup details.</p></div>
         <div className="occasionGrid">{occasionTiles.map(tile => <article key={tile.title}><i className="occasionIcon" aria-hidden="true">{tile.icon}</i><span>{tile.tag}</span><b>{tile.title}</b><p>{tile.detail}</p></article>)}</div>
       </section>
 

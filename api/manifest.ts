@@ -10,7 +10,10 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
       growthModel: '/data/growth-model.json',
       products: '/data/products.json',
       assistant: '/api/assistant',
-      mcpSmoke: '/api/mcp/smoke'
+      mcpSmoke: '/api/mcp/smoke',
+      mcpAudit: '/api/mcp/audit',
+      health: '/api/health',
+      ownerDashboard: '/#owner'
     }
   });
 }
