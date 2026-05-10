@@ -17,15 +17,15 @@ const offers: Offer[] = [
   { label: '$5 off today', value: 'Apply a $5 online sweetness credit', code: 'SWEET5', angle: 'discount' },
   { label: 'Free candles', value: 'Add a small candle set to the box', code: 'CANDLES', angle: 'gift' },
   { label: 'Office treat', value: '10% off a second cake for the same office order', code: 'OFFICE10', angle: 'b2b' },
-  { label: 'Priority request', value: 'Put this order request at the top of the owner queue', code: 'FASTBOX', angle: 'urgency' },
+  { label: 'Priority request', value: 'Move this order request into the priority review lane', code: 'FASTBOX', angle: 'urgency' },
   { label: 'Comeback card', value: 'Add a repeat-order reminder card for next celebration', code: 'MEMORY', angle: 'retention' },
   { label: 'Surprise note', value: 'Add a handwritten gift note to the box', code: 'NOTE', angle: 'gift' }
 ];
 
-const lifecycleStages = [
-  { stage: '1 · Demand', title: 'Find cold occasions', detail: 'Google Maps, Instagram, schools, offices, churches, local events.' },
-  { stage: '2 · Conversion', title: 'Turn visits into orders', detail: 'Catalog, offers, pickup details, owner-approved handoff.' },
-  { stage: '3 · Support', title: 'Track after purchase', detail: 'Pickup questions, changes, complaints, reviews, birthday reminders.' }
+const shopTrustPoints = [
+  { stage: '1', title: 'Pick your cake', detail: 'Classic HappyCake flavors with clear prices, size, and serving info.' },
+  { stage: '2', title: 'Spin for a treat', detail: 'Unlock a small perk before sending your request.' },
+  { stage: '3', title: 'Get confirmation', detail: 'The bakery confirms availability, pickup, and final details before fulfillment.' }
 ];
 
 const ownerWorkstreams = [
@@ -40,10 +40,10 @@ const actionLabels: Record<string, string> = {
   mcp_tool_called: 'Sandbox checked',
   source_checked: 'Catalog and kitchen checked',
   order_intent_created: 'Order intent created',
-  owner_approval_requested: 'Owner approval queued',
-  owner_approved: 'Owner approved',
-  pos_order_created: 'POS handoff ready',
-  kitchen_ticket_created: 'Kitchen ticket ready',
+  owner_approval_requested: 'Bakery review queued',
+  owner_approved: 'Bakery confirmed',
+  pos_order_created: 'Order handoff ready',
+  kitchen_ticket_created: 'Cake prep queued',
   customer_reply_sent: 'Reply prepared'
 };
 
@@ -247,10 +247,10 @@ export default function App() {
     {view === 'shop' && <>
       <section className="shopHero">
         <div className="heroText">
-          <p className="eyebrow">HappyCake Growth OS · Sugar Land</p>
-          <h1>Own the whole cake funnel.</h1>
-          <p className="lead">Agents find local occasions, create content and ad drafts, convert shoppers on the site, then track support and repeat orders — with the owner approving every customer-impacting move.</p>
-          <div className="heroActions"><a className="primary" href="#catalog">Order a cake</a><button className="secondary" onClick={() => setView('owner')}>See owner agents</button></div>
+          <p className="eyebrow">Sugar Land cake shop</p>
+          <h1>Choose a cake. Spin your treat. Send the request.</h1>
+          <p className="lead">Classic HappyCake flavors with clear prices, soft order perks, and a simple request flow. Pick your cake now — the bakery confirms pickup and final details before fulfillment.</p>
+          <div className="heroActions"><a className="primary" href="#catalog">Shop cakes</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin the treat wheel</button></div>
           {offer && <div className="offerRibbon"><span>{offer.code}</span>{offer.value}</div>}
         </div>
         <div className="heroShowcase">
@@ -260,13 +260,13 @@ export default function App() {
       </section>
 
       <section className="funnelMap">
-        {lifecycleStages.map(stage => <article key={stage.stage}><small>{stage.stage}</small><b>{stage.title}</b><p>{stage.detail}</p></article>)}
+        {shopTrustPoints.map(point => <article key={point.stage}><small>{point.stage}</small><b>{point.title}</b><p>{point.detail}</p></article>)}
       </section>
 
       <section className="promoRail">
-        <button onClick={() => setView('owner')}><b>Cold demand</b><span>Google Maps + local occasion leads</span></button>
-        <button onClick={() => setView('owner')}><b>Content + ads</b><span>Owner-approved Instagram/Google drafts</span></button>
-        <button onClick={() => featured && startOrder(featured)}><b>Convert now</b><span>Priced catalog → approval queue</span></button>
+        <button onClick={() => setWheelOpen(true)}><b>Spin the wheel</b><span>Discount, candles, note, or priority request.</span></button>
+        <button onClick={() => featured && startOrder(featured)}><b>Featured cake</b><span>{featured ? `${featured.name} · $${featured.priceUsd}` : 'Pick a classic cake'}</span></button>
+        <button onClick={() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })}><b>Fast request</b><span>Send pickup window, guests, and occasion.</span></button>
       </section>
 
       <section className="catalogSection" id="catalog">
@@ -281,7 +281,7 @@ export default function App() {
         <div className="orderSummary">
           <p className="eyebrow">Order request</p>
           <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
-          {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>${selected.priceUsd}</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. The request goes through the live sandbox and waits for owner approval.</p>}
+          {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>${selected.priceUsd}</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
           {offer && <div className="offerApplied"><b>{offer.code}</b><span>{offer.value}</span></div>}
         </div>
         <div className="orderForm">
@@ -291,18 +291,18 @@ export default function App() {
           <label>Guests <input value={headcount} onChange={e=>setHeadcount(e.target.value)} /></label>
           <label>Note <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add text on box, occasion, or question." /></label>
           <button className="primary wide" onClick={submitOrder} disabled={loading || !selected}>{loading ? 'Sending order request…' : 'Send order request'}</button>
-          <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the sandbox/owner before fulfillment.</p>
+          <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the bakery before fulfillment.</p>
         </div>
       </section>
 
       {result && <section className="replyPanel premiumResult">
         <div className="replyDraft"><span className="softBadge">Order request sent</span><h2>Customer reply</h2><p>{result.reply}</p></div>
-        <div className="realityBox"><div className="sectionHeader"><h2>Sandbox proof</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide' : 'Show'}</button></div><div className="checkGrid"><span>Catalog</span><span>POS</span><span>Kitchen</span><span>Owner</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{a.detail.replace(/simulated · /g, '').replace(/^MCP: /, '')}</small></span></li>)}</ol>}</div>
+        <div className="realityBox"><div className="sectionHeader"><h2>What happens next</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide' : 'Show'}</button></div><div className="checkGrid"><span>Menu</span><span>Price</span><span>Pickup</span><span>Confirm</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{a.detail.replace(/simulated · /g, '').replace(/^MCP: /, '').replace(/owner/gi, 'bakery').replace(/POS/gi, 'order system').replace(/MCP/gi, 'system')}</small></span></li>)}</ol>}</div>
       </section>}
 
       <section className="marketingSection">
-        <div><p className="eyebrow">Agentic funnel</p><h2>From cold lead to repeat cake order.</h2></div>
-        <div className="hookGrid"><article><b>Acquire</b><p>Local demand scout finds office birthdays, school events, church gatherings, and Google Maps moments.</p></article><article><b>Convert</b><p>Site conversion agent turns visitors into structured cake requests and queues owner approval.</p></article><article><b>Support</b><p>Customer support and retention agents track pickup questions, reviews, reminders, and repeat occasions.</p></article></div>
+        <div><p className="eyebrow">Why order here</p><h2>Simple cake buying, not back-and-forth guessing.</h2></div>
+        <div className="hookGrid"><article><b>Clear menu</b><p>See flavor, size, serving estimate, and price before you message.</p></article><article><b>Small perks</b><p>Spin once for candles, a note, a discount, or priority review.</p></article><article><b>Human confirmation</b><p>Pickup time, availability, and special notes are confirmed before fulfillment.</p></article></div>
       </section>
     </>}
 
