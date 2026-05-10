@@ -241,7 +241,7 @@ export default function App() {
   async function submitOrder() {
     const product = selected || featured;
     if (!product) return;
-    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Contact provided: ${contactDetail.trim() ? 'yes' : 'not provided'}. Pickup: ${pickup}. Headcount: ${headcount}. ${promoClaim ? `Offer code: ${promoClaim.promoCode} — ${promoClaim.discountPercent}% off. ` : ''}${note}`;
+    const request = `Order request: ${product.name}, ${product.weight}. Contact provided: ${contactDetail.trim() ? 'yes' : 'not provided'}. Pickup: ${pickup}. Headcount: ${headcount}. Price and availability must be confirmed by the bakery before fulfillment. ${promoClaim ? `Offer code: ${promoClaim.promoCode} — ${promoClaim.discountPercent}% off pending bakery confirmation. ` : ''}${note}`;
     setLoading(true);
     setOwnerResult('');
     const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: promoClaim?.promoCode, contactProvided: Boolean(contactDetail.trim()) }) });
@@ -330,7 +330,7 @@ export default function App() {
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data?.error || 'discount_claim_failed');
       setPromoClaim({ promoCode: data.claim.promoCode, discountPercent: data.claim.discountPercent });
-      setPromoStatus(`Sent — use ${data.claim.promoCode} at checkout.`);
+      setPromoStatus(`Sent — use ${data.claim.promoCode} after bakery confirmation.`);
       if (!name && promoName) setName(promoName);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'discount_claim_failed';
@@ -439,25 +439,44 @@ export default function App() {
         <div className="heroText">
           <p className="eyebrow">Sugar Land cake shop</p>
           <h1>Celebration cakes without the back-and-forth.</h1>
-          <p className="lead">Choose a real HappyCake menu item, see the price before you ask, then send one clean pickup request for the bakery to confirm.</p>
+          <p className="lead">Choose a real HappyCake menu item, review the size and serving guide, then send one clean pickup request for the bakery to confirm current price and availability.</p>
           <div className="heroActions"><a className="primary" href="#catalog">Shop the menu</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin for a discount</button></div>
           <div className="heroHighlights">{landingHighlights.map(item => <span key={item}>{item}</span>)}</div>
           {promoClaim && <div className="offerRibbon"><span>{promoClaim.promoCode}</span>{promoClaim.discountPercent}% off saved for checkout</div>}
         </div>
         <div className="heroShowcase">
           <img className="showcaseMain" src="/assets/hero/happy-cake-hero-02.webp" alt="HappyCake celebration cakes" />
-          {featured && <div className="heroProductCard"><img src={featured.image} alt={featured.name}/><div><small>Featured cake</small><b>{featured.shortName || featured.name}</b><span>${featured.priceUsd} · {featured.weight} · {featured.serves}</span></div></div>}
+          {featured && <div className="heroProductCard"><img src={featured.image} alt={featured.name}/><div><small>Featured cake</small><b>{featured.shortName || featured.name}</b><span>Bakery confirms current price · {featured.weight} · {featured.serves}</span></div></div>}
         </div>
       </section>
 
       <section className="catalogSection catalogAfterHero" id="catalog">
-         <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Shop the cake case.</h2></div><p>Best-seller style cards with price, size, serving guide, and one-tap order request. Demo menu prices shown for order-request flow; final bakery confirmation required before checkout.</p></div>
+         <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Shop the cake case.</h2></div><p>Browse best-selling cakes by size and serving guide. Send a pickup request and the bakery will confirm current pricing, availability, and pickup timing before anything is finalized.</p></div>
         <div className="categoryBar" aria-label="Cake shopping categories"><span>Best sellers</span><span>Birthday</span><span>Office</span><span>Gift</span><button onClick={() => setWheelOpen(true)}>5–50% discount wheel</button></div>
         <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
           <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{i === 0 ? 'Most loved' : p.tags[0]}</span></button>
-          <div className="cakeInfo"><div><small>{p.tags.slice(0, 2).join(' · ')}</small><h3>{p.shortName || p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>${p.priceUsd}</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button></div>
+          <div className="cakeInfo"><div><small>{p.tags.slice(0, 2).join(' · ')}</small><h3>{p.shortName || p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>Bakery confirms current price</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button></div>
         </article>)}</div>
       </section>
+
+      {selected && <section className="orderStage" id="order">
+        <div className="orderSummary">
+          <p className="eyebrow">Order request</p>
+          <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
+          {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>Bakery confirms current price</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
+          {promoClaim && <div className="offerApplied"><b>{promoClaim.promoCode}</b><span>{promoClaim.discountPercent}% off saved for bakery-confirmed checkout</span></div>}
+        </div>
+        <div className="orderForm">
+          <label>Your name <input value={name} onChange={e=>setName(e.target.value)} placeholder="Optional" /></label>
+          <label>Reply channel <select value={channel} onChange={e=>setChannel(e.target.value as Channel)}><option value="website">Website</option><option value="instagram">Instagram DM</option><option value="whatsapp">WhatsApp</option></select></label>
+          <label>Reply contact <input value={contactDetail} onChange={e=>setContactDetail(e.target.value)} placeholder="Instagram handle, WhatsApp number, or email" /></label>
+          <label>Pickup window <input value={pickup} onChange={e=>setPickup(e.target.value)} /></label>
+          <label>Guests <input value={headcount} onChange={e=>setHeadcount(e.target.value)} /></label>
+          <label>Note <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add text on box, occasion, or question." /></label>
+          <button className="primary wide" onClick={submitOrder} disabled={loading || !selected}>{loading ? 'Sending order request…' : 'Send order request'}</button>
+          <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the bakery before fulfillment.</p>
+        </div>
+      </section>}
 
       <section className="landingSection occasionSection">
         <div className="sectionHeader"><div><p className="eyebrow">Occasions</p><h2>Pick by moment, not just flavor.</h2></div><p>Fast paths for birthdays, gifts, and office tables — choose the cake first, then send pickup details.</p></div>
@@ -494,25 +513,6 @@ export default function App() {
           </ul>
         </div>
       </section>
-
-      {selected && <section className="orderStage" id="order">
-        <div className="orderSummary">
-          <p className="eyebrow">Order request</p>
-          <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
-          {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>${selected.priceUsd}</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
-          {promoClaim && <div className="offerApplied"><b>{promoClaim.promoCode}</b><span>{promoClaim.discountPercent}% off saved for checkout</span></div>}
-        </div>
-        <div className="orderForm">
-          <label>Your name <input value={name} onChange={e=>setName(e.target.value)} placeholder="Optional" /></label>
-          <label>Reply channel <select value={channel} onChange={e=>setChannel(e.target.value as Channel)}><option value="website">Website</option><option value="instagram">Instagram DM</option><option value="whatsapp">WhatsApp</option></select></label>
-          <label>Reply contact <input value={contactDetail} onChange={e=>setContactDetail(e.target.value)} placeholder="Instagram handle, WhatsApp number, or email" /></label>
-          <label>Pickup window <input value={pickup} onChange={e=>setPickup(e.target.value)} /></label>
-          <label>Guests <input value={headcount} onChange={e=>setHeadcount(e.target.value)} /></label>
-          <label>Note <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add text on box, occasion, or question." /></label>
-          <button className="primary wide" onClick={submitOrder} disabled={loading || !selected}>{loading ? 'Sending order request…' : 'Send order request'}</button>
-          <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the bakery before fulfillment.</p>
-        </div>
-      </section>}
 
       {result && <section className="replyPanel premiumResult">
         <div className="replyDraft"><span className="softBadge">Order request sent</span><h2>Customer reply</h2><p>{cleanShopperText(result.reply)}</p></div>

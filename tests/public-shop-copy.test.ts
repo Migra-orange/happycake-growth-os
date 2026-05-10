@@ -88,12 +88,28 @@ describe('public shop copy', () => {
     const submission = readFileSync('SUBMISSION.md', 'utf8');
     const manifest = readFileSync('public/agent-manifest.json', 'utf8');
 
-    expect(products).toContain('Displayed prices are demo menu values for the order-request flow');
+    expect(products).toContain('Displayed prices are demo menu values for internal evaluator calculations only');
     expect(products).not.toContain("Prices and product names come from HappyCake's published cake menu.");
-    expect(shop).toContain('Demo menu prices shown for order-request flow; final bakery confirmation required before checkout.');
+    expect(shop).toContain('Browse best-selling cakes by size and serving guide. Send a pickup request and the bakery will confirm current pricing, availability, and pickup timing before anything is finalized.');
+    expect(shop).not.toContain('Demo menu prices');
+    expect(shop).not.toMatch(/p\.priceUsd|selected\.priceUsd|featured\.priceUsd/);
+    expect(source).not.toContain('product.priceUsd');
     expect(source).not.toContain("price: p.priceUsd, priceCurrency: 'USD'");
+    expect(source).not.toContain('`, $${product.priceUsd}.`');
     expect(submission).toContain('public Vercel demo proves live Steppe MCP integration and owner-safety flows');
     expect(manifest).toContain('claudeCodeCliProof');
     expect(manifest).not.toContain('"/api/assistant"]');
+  });
+
+  it('places the selected-cake order form immediately after the catalog CTA target', () => {
+    const shop = shopMarkup();
+    const catalog = shop.indexOf('className="catalogSection catalogAfterHero"');
+    const orderStage = shop.indexOf('{selected && <section className="orderStage"', catalog);
+    const occasions = shop.indexOf('className="landingSection occasionSection"', catalog);
+
+    expect(catalog).toBeGreaterThan(-1);
+    expect(orderStage).toBeGreaterThan(catalog);
+    expect(occasions).toBeGreaterThan(orderStage);
+    expect(shop).toContain('button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button>');
   });
 });

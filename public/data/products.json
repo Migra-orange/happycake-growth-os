@@ -3,7 +3,7 @@
   "locality": "Sugar Land, Texas",
   "updatedAt": "2026-05-09",
   "guardrails": [
-    "Displayed prices are demo menu values for the order-request flow; the bakery confirms final price before fulfillment.",
+    "Displayed prices are demo menu values for internal evaluator calculations only; shoppers see bakery-confirmed pricing language instead of unverified public prices.",
     "Pickup time, inventory, allergens, delivery, and special requests still require bakery confirmation.",
     "Ready-made classic cakes first; decoration is small and optional, not custom cake production."
   ],
