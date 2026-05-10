@@ -110,6 +110,16 @@ describe('public shop copy', () => {
     expect(catalog).toBeGreaterThan(-1);
     expect(orderStage).toBeGreaterThan(catalog);
     expect(occasions).toBeGreaterThan(orderStage);
-    expect(shop).toContain('button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button>');
+    expect(shop).toContain('button className="orderButton" type="button" onClick={() => startOrder(p)}>Order this cake</button>');
+  });
+
+  it('requires an explicit cake selection before sending a buyer request', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+    const shop = shopMarkup();
+
+    expect(source).toContain('const product = selected;');
+    expect(source).not.toContain('const product = selected || featured;');
+    expect(shop).toContain('disabled={loading || !selected}');
+    expect(shop).toContain("{!selected ? 'Choose a cake first' : loading ? 'Sending order request…' : 'Send order request'}");
   });
 });

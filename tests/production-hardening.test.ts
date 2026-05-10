@@ -89,6 +89,15 @@ describe('production hardening gates', () => {
     expect(smoke).toContain('mcp_token_missing');
   });
 
+  it('labels Vercel health as a serverless MCP demo without over-claiming Claude CLI execution', () => {
+    const health = read('api/health.ts');
+
+    expect(health).toContain("localRuntime: 'claude-code-cli'");
+    expect(health).toContain("productionRuntime: 'vercel_serverless_mcp_demo'");
+    expect(health).toContain('claudeCliProductionExecuted: false');
+    expect(health).toContain("localProofPath: 'src/server/assistant.ts'");
+  });
+
   it('requires live MCP side-effect acknowledgements before recording owner side effects', () => {
     const ownerAction = read('api/telegram/owner-action.ts');
 

@@ -239,7 +239,7 @@ export default function App() {
   }
 
   async function submitOrder() {
-    const product = selected || featured;
+    const product = selected;
     if (!product) return;
     const request = `Order request: ${product.name}, ${product.weight}. Contact provided: ${contactDetail.trim() ? 'yes' : 'not provided'}. Pickup: ${pickup}. Headcount: ${headcount}. Price and availability must be confirmed by the bakery before fulfillment. ${promoClaim ? `Offer code: ${promoClaim.promoCode} — ${promoClaim.discountPercent}% off pending bakery confirmation. ` : ''}${note}`;
     setLoading(true);
@@ -455,7 +455,7 @@ export default function App() {
         <div className="categoryBar" aria-label="Cake shopping categories"><span>Best sellers</span><span>Birthday</span><span>Office</span><span>Gift</span><button onClick={() => setWheelOpen(true)}>5–50% discount wheel</button></div>
         <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
           <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{i === 0 ? 'Most loved' : p.tags[0]}</span></button>
-          <div className="cakeInfo"><div><small>{p.tags.slice(0, 2).join(' · ')}</small><h3>{p.shortName || p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>Bakery confirms current price</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button></div>
+          <div className="cakeInfo"><div><small>{p.tags.slice(0, 2).join(' · ')}</small><h3>{p.shortName || p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>Bakery confirms current price</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" type="button" onClick={() => startOrder(p)}>Order this cake</button></div>
         </article>)}</div>
       </section>
 
@@ -473,7 +473,7 @@ export default function App() {
           <label>Pickup window <input value={pickup} onChange={e=>setPickup(e.target.value)} /></label>
           <label>Guests <input value={headcount} onChange={e=>setHeadcount(e.target.value)} /></label>
           <label>Note <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add text on box, occasion, or question." /></label>
-          <button className="primary wide" onClick={submitOrder} disabled={loading || (!selected && !featured)}>{loading ? 'Sending order request…' : 'Send order request'}</button>
+          <button className="primary wide" onClick={submitOrder} disabled={loading || !selected}>{!selected ? 'Choose a cake first' : loading ? 'Sending order request…' : 'Send order request'}</button>
           <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the bakery before fulfillment.</p>
         </div>
       </section>

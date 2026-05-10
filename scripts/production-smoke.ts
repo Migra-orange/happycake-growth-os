@@ -21,7 +21,7 @@ const endpoints = [
 ];
 
 function stableBody(endpoint: string, body: any) {
-  if (endpoint === 'health') return { ok: body?.ok, service: body?.service, runtime: body?.runtime, deployment: body?.deployment };
+  if (endpoint === 'health') return { ok: body?.ok, service: body?.service, runtime: body?.runtime, localRuntime: body?.localRuntime, productionRuntime: body?.productionRuntime, claudeCliProductionExecuted: body?.claudeCliProductionExecuted, localProofPath: body?.localProofPath, deployment: body?.deployment };
   if (endpoint === 'manifest') return { name: body?.name, runtime: body?.runtime, ownerUi: body?.ownerUi, publicDemo: body?.publicDemo };
   if (endpoint === 'mcpSmoke') return { ok: body?.ok, source: body?.source, tool: body?.tool };
   if (endpoint === 'mcpAudit') return {
