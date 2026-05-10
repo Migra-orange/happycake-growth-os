@@ -132,4 +132,12 @@ describe('public shop copy', () => {
     expect(source).not.toContain("hash.startsWith('#owner')");
     expect(source).not.toContain("search.includes('owner=1')");
   });
+
+  it('responds when evaluators navigate from the shop hash to the owner hash without a full reload', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+
+    expect(source).toContain("window.addEventListener('hashchange', syncHashRoute)");
+    expect(source).toContain("window.removeEventListener('hashchange', syncHashRoute)");
+    expect(source).toContain("setView(isOwnerRoute(window.location.hash, window.location.search) ? 'owner' : 'shop')");
+  });
 });

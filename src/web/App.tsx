@@ -175,6 +175,14 @@ export default function App() {
     refreshDashboard();
   }, []);
 
+  useEffect(() => {
+    function syncHashRoute() {
+      setView(isOwnerRoute(window.location.hash, window.location.search) ? 'owner' : 'shop');
+    }
+    window.addEventListener('hashchange', syncHashRoute);
+    return () => window.removeEventListener('hashchange', syncHashRoute);
+  }, []);
+
   function ownerHeaders(token = ownerToken): Record<string, string> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token.trim()) headers['x-owner-token'] = token.trim();
