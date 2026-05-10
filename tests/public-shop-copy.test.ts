@@ -41,4 +41,17 @@ describe('public shop copy', () => {
     expect(shop).not.toContain('className="marketingSection"');
     expect(shop).toContain('{selected && <section className="orderStage"');
   });
+
+  it('includes premium cake storefront basics without opening the discount wheel automatically', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+    const shop = shopMarkup();
+
+    expect(shop).toContain('Shop the cake case.');
+    expect(shop).toContain('Best sellers');
+    expect(shop).toContain('Pick by moment, not just flavor.');
+    expect(shop).toContain('How ordering works');
+    expect(shop).toContain('Request first. Confirmation before commitment.');
+    expect(shop).toContain('Spin for a discount');
+    expect(source).not.toContain('setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }');
+  });
 });

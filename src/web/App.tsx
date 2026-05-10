@@ -23,9 +23,21 @@ const offers: Offer[] = [
 ];
 
 const shopTrustPoints = [
-  { stage: '1', title: 'Pick your cake', detail: 'Classic HappyCake flavors with clear prices, size, and serving info.' },
-  { stage: '2', title: 'Spin for a treat', detail: 'Unlock a small perk before sending your request.' },
-  { stage: '3', title: 'Get confirmation', detail: 'The bakery confirms availability, pickup, and final details before fulfillment.' }
+  { stage: 'Fresh', title: 'Reviewed by the bakery', detail: 'Every request is checked before pickup details are confirmed.' },
+  { stage: 'Clear', title: 'Prices up front', detail: 'Cake price, weight, and serving guide stay visible before you send anything.' },
+  { stage: 'Easy', title: 'Simple celebration notes', detail: 'Add pickup window, guest count, and a short note in one step.' }
+];
+
+const occasionTiles = [
+  { title: 'Birthday table', detail: 'Honey and Milk Maiden are gentle crowd-pleasers for family celebrations.', tag: 'Birthdays' },
+  { title: 'Office share', detail: 'Napoleon cuts clean, travels well, and feels special without a custom build.', tag: 'Work treats' },
+  { title: 'Gift moment', detail: 'Pistachio Roll brings brighter flavor when you want the cake to feel like a present.', tag: 'Gifts' }
+];
+
+const landingHighlights = [
+  'Shop by real cake menu',
+  'Pickup reviewed before confirmation',
+  'Individual checkout code after contact claim'
 ];
 
 const ownerWorkstreams = [
@@ -97,11 +109,7 @@ export default function App() {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
     fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth).catch(() => {});
     refreshDashboard();
-    const seen = localStorage.getItem('happycake-offer-seen');
     setOwnerToken(localStorage.getItem('happycake-owner-token') || '');
-    const ownerRoute = window.location.hash === '#owner' || window.location.search.includes('owner=1');
-    const timer = window.setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }, 850);
-    return () => window.clearTimeout(timer);
   }, []);
 
   function ownerHeaders(): Record<string, string> {
@@ -342,23 +350,35 @@ export default function App() {
       <section className="shopHero">
         <div className="heroText">
           <p className="eyebrow">Sugar Land cake shop</p>
-          <h1>Choose a cake. Spin your treat. Send the request.</h1>
-          <p className="lead">Classic HappyCake flavors with clear prices, soft order perks, and a simple request flow. Pick your cake now — the bakery confirms pickup and final details before fulfillment.</p>
-          <div className="heroActions"><a className="primary" href="#catalog">Shop cakes</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin the treat wheel</button></div>
+          <h1>Celebration cakes without the back-and-forth.</h1>
+          <p className="lead">Choose a real HappyCake menu item, see the price before you ask, then send one clean pickup request for the bakery to confirm.</p>
+          <div className="heroActions"><a className="primary" href="#catalog">Shop the menu</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin for a discount</button></div>
+          <div className="heroHighlights">{landingHighlights.map(item => <span key={item}>{item}</span>)}</div>
           {promoClaim && <div className="offerRibbon"><span>{promoClaim.promoCode}</span>{promoClaim.discountPercent}% off saved for checkout</div>}
         </div>
         <div className="heroShowcase">
-          <img className="showcaseMain" src="/assets/hero/happy-cake-hero-02.webp" alt="HappyCake cakes" />
-          {featured && <div className="heroProductCard"><img src={featured.image} alt={featured.name}/><div><small>Featured</small><b>{featured.name}</b><span>${featured.priceUsd} · {featured.weight}</span></div></div>}
+          <img className="showcaseMain" src="/assets/hero/happy-cake-hero-02.webp" alt="HappyCake celebration cakes" />
+          {featured && <div className="heroProductCard"><img src={featured.image} alt={featured.name}/><div><small>Featured cake</small><b>{featured.shortName || featured.name}</b><span>${featured.priceUsd} · {featured.weight} · {featured.serves}</span></div></div>}
         </div>
       </section>
 
       <section className="catalogSection catalogAfterHero" id="catalog">
-        <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Classic cakes, priced clearly.</h2></div><p>Pickup time and availability still get bakery confirmation before the promise goes out.</p></div>
+        <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Shop the cake case.</h2></div><p>Best-seller style cards with price, size, serving guide, and one-tap order request.</p></div>
+        <div className="categoryBar" aria-label="Cake shopping categories"><span>Best sellers</span><span>Birthday</span><span>Office</span><span>Gift</span><button onClick={() => setWheelOpen(true)}>5–50% discount wheel</button></div>
         <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
-          <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{p.tags[0]}</span></button>
-          <div className="cakeInfo"><div><h3>{p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>${p.priceUsd}</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button></div>
+          <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{i === 0 ? 'Most loved' : p.tags[0]}</span></button>
+          <div className="cakeInfo"><div><small>{p.tags.slice(0, 2).join(' · ')}</small><h3>{p.shortName || p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>${p.priceUsd}</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button></div>
         </article>)}</div>
+      </section>
+
+      <section className="landingSection occasionSection">
+        <div className="sectionHeader"><div><p className="eyebrow">Occasions</p><h2>Pick by moment, not just flavor.</h2></div><p>Borrowed from the best cake storefronts: shoppers need fast paths for birthdays, gifts, and office tables.</p></div>
+        <div className="occasionGrid">{occasionTiles.map(tile => <article key={tile.title}><span>{tile.tag}</span><b>{tile.title}</b><p>{tile.detail}</p></article>)}</div>
+      </section>
+
+      <section className="landingSection confidenceSection">
+        <div className="confidenceCopy"><p className="eyebrow">How ordering works</p><h2>Request first. Confirmation before commitment.</h2><p>Premium cake sites reduce anxiety: what it costs, how many it serves, and what happens after you click. HappyCake keeps that clear without pretending live availability is guaranteed.</p></div>
+        <div className="trustGrid">{shopTrustPoints.map(point => <article key={point.title}><span>{point.stage}</span><b>{point.title}</b><p>{point.detail}</p></article>)}</div>
       </section>
 
       {selected && <section className="orderStage" id="order">

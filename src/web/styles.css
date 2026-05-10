@@ -415,3 +415,45 @@ main { min-height: 100vh; overflow: hidden; }
 .birthdayStatus { margin: 0; border-radius: 18px; padding: 13px 14px; background: rgba(139,215,181,.20); color: var(--brown) !important; font-weight: 850; }
 @media (max-width: 900px) { .birthdayClub { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .birthdayClub { width: min(100% - 24px, 1240px); } .birthdayForm { grid-template-columns: 1fr; } }
+
+
+/* Premium cake storefront completion pass */
+.shopHero { margin-top: clamp(22px, 4.5vw, 54px); }
+.shopHero .primary, .catalogSection .orderButton, .orderStage .primary { background: linear-gradient(135deg, #6B3A1E, #A65A2E); box-shadow: 0 18px 44px rgba(107,58,30,.24); }
+.shopHero .secondary { background: rgba(255,253,247,.82); border-color: rgba(107,58,30,.20); }
+.heroHighlights { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+.heroHighlights span { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(107,58,30,.14); background: rgba(255,253,247,.70); color: var(--brown); border-radius: var(--pill); padding: 9px 12px; font-size: 12px; font-weight: 950; }
+.heroHighlights span:before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--berry); box-shadow: 0 0 0 4px rgba(233,75,123,.10); }
+.categoryBar { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
+.categoryBar span, .categoryBar button { border: 1px solid rgba(107,58,30,.14); border-radius: var(--pill); background: rgba(255,253,247,.72); color: var(--brown); padding: 10px 14px; font-size: 13px; font-weight: 950; }
+.categoryBar button { background: rgba(233,75,123,.10); border-color: rgba(233,75,123,.24); color: #9D294E; }
+.cakeInfo small { display: block; margin-bottom: 9px; color: var(--berry); font-size: 11px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
+.landingSection { width: min(1240px, calc(100% - 36px)); margin: clamp(52px, 8vw, 96px) auto 0; }
+.occasionGrid, .trustGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+.occasionGrid article, .trustGrid article { min-height: 190px; border: 1px solid rgba(107,58,30,.14); border-radius: 34px; background: rgba(255,253,247,.72); padding: 24px; box-shadow: 0 18px 54px rgba(107,58,30,.08); }
+.occasionGrid article:nth-child(2) { background: linear-gradient(135deg, rgba(255,253,247,.82), rgba(255,225,106,.20)); }
+.occasionGrid article:nth-child(3) { background: linear-gradient(135deg, rgba(255,253,247,.82), rgba(139,215,181,.18)); }
+.occasionGrid span, .trustGrid span { display: inline-flex; width: fit-content; border-radius: var(--pill); background: rgba(233,75,123,.11); color: var(--berry); padding: 7px 10px; font-size: 11px; font-weight: 950; text-transform: uppercase; letter-spacing: .10em; }
+.occasionGrid b, .trustGrid b { display: block; margin-top: 18px; font-family: var(--font-display); color: var(--brown); font-size: clamp(2rem, 3.2vw, 3.4rem); line-height: .86; letter-spacing: -.05em; }
+.occasionGrid p, .trustGrid p, .confidenceCopy p { color: var(--muted); line-height: 1.5; font-weight: 700; }
+.confidenceSection { display: grid; grid-template-columns: .85fr 1.15fr; gap: 26px; align-items: stretch; padding: clamp(22px, 4vw, 38px); border-radius: 44px; background: linear-gradient(135deg, rgba(107,58,30,.96), rgba(61,31,16,.96)); color: var(--cream); overflow: hidden; position: relative; }
+.confidenceSection:before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 16% 8%, rgba(255,225,106,.18), transparent 22rem), radial-gradient(circle at 92% 18%, rgba(233,75,123,.16), transparent 24rem); pointer-events: none; }
+.confidenceSection > * { position: relative; z-index: 1; }
+.confidenceCopy h2 { margin: 0; font-family: var(--font-display); font-size: clamp(2.8rem, 5.4vw, 6rem); line-height: .82; letter-spacing: -.06em; }
+.confidenceCopy p { color: rgba(255,247,234,.74); }
+.confidenceSection .eyebrow { color: var(--lemon); }
+.confidenceSection .trustGrid { margin-top: 0; grid-template-columns: 1fr; }
+.confidenceSection .trustGrid article { min-height: auto; background: rgba(255,253,247,.10); border-color: rgba(255,247,234,.18); box-shadow: none; }
+.confidenceSection .trustGrid span { background: rgba(255,225,106,.16); color: var(--lemon); }
+.confidenceSection .trustGrid b { margin-top: 10px; color: var(--cream); font-size: 2rem; }
+.confidenceSection .trustGrid p { color: rgba(255,247,234,.70); margin-bottom: 0; }
+@media (max-width: 900px) {
+  .occasionGrid, .trustGrid, .confidenceSection { grid-template-columns: 1fr; }
+  .confidenceSection .trustGrid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .heroHighlights { display: grid; }
+  .categoryBar { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .categoryBar span, .categoryBar button { white-space: nowrap; }
+  .occasionGrid article, .trustGrid article { min-height: auto; }
+}
