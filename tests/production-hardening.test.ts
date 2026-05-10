@@ -41,6 +41,16 @@ describe('production hardening gates', () => {
     expect(handlerSection).toContain('missingSideEffects');
   });
 
+  it('sanitizes customer-provided names before storing approval records', () => {
+    const assistant = read('api/assistant.ts');
+
+    expect(assistant).toContain('const rawName');
+    expect(assistant).toContain('const safeName');
+    expect(assistant).toContain("customer: safeName || 'Website customer'");
+    expect(assistant).toContain("summary: `${safeName || 'Customer'} wants");
+    expect(assistant).not.toContain("customer: name || 'Website customer'");
+  });
+
   it('adds abuse protection to public and owner mutation endpoints', () => {
     const assistant = read('api/assistant.ts');
     const ownerAction = read('api/telegram/owner-action.ts');

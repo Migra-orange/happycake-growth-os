@@ -175,7 +175,8 @@ async function runFlow(body: any) {
   const safeMessage = sanitizeCustomerText(message);
   const lower = message.toLowerCase();
   const channel = String(body?.channel || 'website');
-  const name = body?.customerName ? String(body.customerName) : undefined;
+  const rawName = body?.customerName ? String(body.customerName) : undefined;
+  const safeName = rawName ? sanitizeCustomerText(rawName) : undefined;
   const productPreference = productFrom(message);
   const requiresApproval = body?.requireOwnerApproval !== false && isExplicitOrderRequest(message, productPreference);
   const isB2B = /office|school|church|team|company|staff|birthday/.test(lower);
@@ -199,9 +200,9 @@ async function runFlow(body: any) {
   const approvalRecord = approvalStore ? upsertApprovalRecord(approvalStore, {
     approvalId,
     intentId,
-    customer: name || 'Website customer',
+    customer: safeName || 'Website customer',
     status: 'pending',
-    summary: `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Owner approval required before POS/kitchen handoff.`,
+    summary: `${safeName || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Owner approval required before POS/kitchen handoff.`,
     riskFlags,
     policyDecision: 'require_owner_approval',
     proposedSideEffects: ['square_create_order', 'kitchen_create_ticket'],
@@ -225,13 +226,13 @@ async function runFlow(body: any) {
     evidenceId,
     guardrails,
     reply: missing.length
-      ? `Hi${name ? ` ${name}` : ''}. Thank you for reaching out to HappyCake. Pick one cake from the menu and send your pickup window — the bakery will confirm final availability, allergens, and pickup before fulfillment.`
+      ? `Hi${safeName ? ` ${safeName}` : ''}. Thank you for reaching out to HappyCake. Pick one cake from the menu and send your pickup window — the bakery will confirm final availability, allergens, and pickup before fulfillment.`
       : requiresApproval
-        ? `Hi${name ? ` ${name}` : ''}. Your HappyCake request for ${productPreference} is queued. I checked the menu, order details, and bakery capacity. The bakery will confirm final pickup details before fulfillment.`
-        : `Hi${name ? ` ${name}` : ''}. ${productPreference ? `${productPreference} is a good place to start.` : 'For 12 guests, start with the 1.2 kg cakes that serve about 10 and ask the bakery about adding slices or a second cake.'} Send a pickup window when you are ready for the bakery to confirm.`,
-    ownerSummary: requiresApproval ? `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/POS/kitchen/evaluator checks; owner approval required before POS/kitchen handoff.` : `Shopper asked for cake guidance from ${channel}. Evidence: ${sourceSummary} menu/capacity checks; no side-effect approval needed.`,
+        ? `Hi${safeName ? ` ${safeName}` : ''}. Your HappyCake request for ${productPreference} is queued. I checked the menu, order details, and bakery capacity. The bakery will confirm final pickup details before fulfillment.`
+        : `Hi${safeName ? ` ${safeName}` : ''}. ${productPreference ? `${productPreference} is a good place to start.` : 'For 12 guests, start with the 1.2 kg cakes that serve about 10 and ask the bakery about adding slices or a second cake.'} Send a pickup window when you are ready for the bakery to confirm.`,
+    ownerSummary: requiresApproval ? `${safeName || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/POS/kitchen/evaluator checks; owner approval required before POS/kitchen handoff.` : `Shopper asked for cake guidance from ${channel}. Evidence: ${sourceSummary} menu/capacity checks; no side-effect approval needed.`,
     actions,
-    orderIntent: { intentId, state: requiresApproval ? 'customer_reply_sent' : 'guidance_sent', channel, customerName: name, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: safeMessage, riskFlags, requiredFieldsMissing: missing },
+    orderIntent: { intentId, state: requiresApproval ? 'customer_reply_sent' : 'guidance_sent', channel, customerName: safeName, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: safeMessage, riskFlags, requiredFieldsMissing: missing },
     mcpChecks,
     ownerDelivery,
     requiredApprovals: approvalRecord ? [{ approvalId: approvalRecord.approvalId, intentId, status: approvalRecord.status, ownerChannel: 'telegram', summary: approvalRecord.summary, sideEffectsIfApproved: ['square_create_order', 'kitchen_create_ticket', 'send customer reply'] }] : [],
