@@ -80,4 +80,20 @@ describe('public shop copy', () => {
     expect(businessProfile).toContain('HappyCake on Google Maps');
     expect(businessProfile).toContain('HappyCake is listed on Google Maps');
   });
+
+  it('does not overstate product price source or publish unverified structured offer prices', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+    const shop = shopMarkup();
+    const products = readFileSync('public/data/products.json', 'utf8');
+    const submission = readFileSync('SUBMISSION.md', 'utf8');
+    const manifest = readFileSync('public/agent-manifest.json', 'utf8');
+
+    expect(products).toContain('Displayed prices are demo menu values for the order-request flow');
+    expect(products).not.toContain("Prices and product names come from HappyCake's published cake menu.");
+    expect(shop).toContain('Demo menu prices shown for order-request flow; final bakery confirmation required before checkout.');
+    expect(source).not.toContain("price: p.priceUsd, priceCurrency: 'USD'");
+    expect(submission).toContain('public Vercel demo proves live Steppe MCP integration and owner-safety flows');
+    expect(manifest).toContain('claudeCodeCliProof');
+    expect(manifest).not.toContain('"/api/assistant"]');
+  });
 });

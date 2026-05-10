@@ -11,7 +11,7 @@ const outPath = path.join(evidenceDir, 'production-smoke-latest.json');
 const endpoints = [
   { name: 'health', path: '/api/health', expect: (body: any) => body?.ok === true && body?.runtime === 'claude-code-cli' },
   { name: 'manifest', path: '/api/manifest', expect: (body: any) => body?.runtime === 'claude-code-cli' && body?.ownerUi === 'telegram' },
-  { name: 'mcpSmoke', path: '/api/mcp/smoke', expect: (body: any) => body?.ok === true && body?.source === 'mcp' },
+  { name: 'mcpSmoke', path: '/api/mcp/smoke', expect: (body: any) => body?.ok === true && body?.source === 'mcp' && body?.usedFallback === false && body?.mode === 'live' },
   { name: 'mcpAudit', path: '/api/mcp/audit', expect: (body: any) => body?.ok === true && body?.usedFallback === false && Array.isArray(body?.failures) && body.failures.length === 0 },
   { name: 'ownerDashboard', path: '/api/owner/dashboard', expect: (body: any) => body?.mode === 'live' && body?.storageMode === 'vercel_blob' && Array.isArray(body?.agents) && body.agents.length >= 7 && Array.isArray(body?.mcpChecks) && body.mcpChecks.every((check: any) => check?.source === 'mcp') },
   { name: 'ownerConfig', path: '/api/owner/config', expect: (body: any) => body?.storageMode === 'vercel_blob' && body?.ownerAuthEnabled === true && body?.durableConfigured === true },

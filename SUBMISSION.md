@@ -10,7 +10,7 @@ It is designed for the actual HappyCake business goal: move from **$15–20k/mon
 
 ## Compliance
 
-- Runtime contract: Node wrapper calls `claude -p` in live mode after MCP context is collected.
+- Runtime contract: the local Node/Express wrapper calls `claude -p` in live mode after MCP context is collected; the public Vercel demo proves live Steppe MCP integration and owner-safety flows.
 - Owner UI: Telegram approval cards and owner action handler; local endpoint remains for deterministic evaluator demo.
 - MCP: adapter configured for `https://www.steppebusinessclub.com/api/mcp` with `X-Team-Token` via env only.
 - Public repo safe: no secrets committed.
@@ -34,7 +34,7 @@ What to verify:
 
 | Requirement | Proof |
 | --- | --- |
-| Claude Code CLI runtime | `src/server/assistant.ts` shells to `claude -p`; no Claude Agent SDK, LangGraph, CrewAI, n8n, or alternate core LLM provider. Model selection is controlled by the installed Claude Code CLI profile (war-room OpenClaw also reports `claude-opus-4-7`). |
+| Claude Code CLI runtime | Local proof: `src/server/assistant.ts` shells to `claude -p`. Production Vercel proof: `api/assistant.ts` is an MCP-backed deterministic serverless flow until a deployed runtime-probe endpoint is added. No Claude Agent SDK, LangGraph, CrewAI, n8n, or alternate core LLM provider is used. |
 | Real Steppe MCP calls | `GET /api/mcp/audit` returns `mode: "live"`, `usedFallback: false`, and every check has `source: "mcp"`. `GET /api/mcp/smoke` also returns top-level `source: "mcp"`; sandbox catalog wording inside the Steppe response is provider data, not local fallback. |
 | Owner approval safety | `POST /api/assistant` with `requireOwnerApproval: true` creates a pending approval and no POS/kitchen side effects. `POST /api/telegram/owner-action` without owner token returns `401 owner_auth_required`; token approval is the only path that creates sandbox Square/kitchen side effects. |
 | Durable owner state | `GET /api/owner/config` returns `storageMode: "vercel_blob"`, `durableConfigured: true`, `ownerAuthEnabled: true`; `GET /api/owner/dashboard` shows queue/config from the same durable mode. |

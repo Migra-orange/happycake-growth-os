@@ -125,6 +125,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (const tool of tools) {
         const call = await callMcp(tool, { intentId: record.intentId, approvalId: record.approvalId, approvedBy: 'owner_telegram', idempotencyKey: `${record.approvalId}:${tool}` });
         mcpCalls.push(call);
+        if (!call.ok || call.source !== 'mcp') {
+          throw new Error(`side_effect_not_live_mcp:${tool}`);
+        }
         record.executedSideEffects = Array.from(new Set([...(record.executedSideEffects || []), call.tool]));
         const savedSideEffect = await saveApprovalStore(store);
         if (!savedSideEffect) throw new Error('side_effect_persistence_failed');
@@ -152,6 +155,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const mcpCalls = rejected
       ? [await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'rejected', note: req.body?.note || '', idempotencyKey: `${approval.approvalId}:marketing_report_to_owner` })]
       : await runMissingApprovedSideEffects(decidedApproval, expectedSideEffects);
+    if (rejected && mcpCalls.some(call => !call.ok || call.source !== 'mcp')) {
+      throw new Error('side_effect_not_live_mcp:marketing_report_to_owner');
+    }
 
     return res.status(200).json({
       ok: true,

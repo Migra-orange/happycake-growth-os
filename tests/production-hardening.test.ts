@@ -70,6 +70,44 @@ describe('production hardening gates', () => {
     }
   });
 
+  it('makes MCP smoke proof explicit about live mode and fallback state', () => {
+    const smoke = read('api/mcp/smoke.ts');
+
+    expect(smoke).toContain("mode: 'live'");
+    expect(smoke).toContain('usedFallback: false');
+    expect(smoke).toContain("mode: 'simulated'");
+    expect(smoke).toContain('usedFallback: true');
+    expect(smoke).toContain('mcp_token_missing');
+  });
+
+  it('requires live MCP side-effect acknowledgements before recording owner side effects', () => {
+    const ownerAction = read('api/telegram/owner-action.ts');
+
+    expect(ownerAction).toContain("call.source !== 'mcp'");
+    expect(ownerAction).toContain('side_effect_not_live_mcp');
+    const sideEffectRunner = ownerAction.slice(ownerAction.indexOf('const runMissingApprovedSideEffects'));
+    expect(sideEffectRunner.indexOf("call.source !== 'mcp'")).toBeLessThan(sideEffectRunner.indexOf('record.executedSideEffects = Array.from'));
+  });
+
+  it('keeps local Express owner actions fail-closed when the owner token is missing', () => {
+    const server = read('src/server/index.ts');
+
+    expect(server).toContain('!process.env.OWNER_API_TOKEN');
+    expect(server).toContain("req.header('x-owner-token') !== process.env.OWNER_API_TOKEN");
+  });
+
+  it('answers serving-size chat questions without creating an order request', () => {
+    const app = read('src/web/App.tsx');
+
+    expect(app).toContain('function localCakeGuidance');
+    expect(app).toContain('is listed as ${servingMatch.serves}');
+    expect(app).toContain('const localReply = localCakeGuidance(message, products)');
+    expect(app).toContain('const headcountMatch');
+    expect(app).not.toContain("const asksRecommendation = /\\b(which|what|recommend|fit|fits|best|good)\\b/");
+    const chatSubmit = app.slice(app.indexOf('async function submitChatMessage'));
+    expect(chatSubmit.indexOf('const localReply = localCakeGuidance(message, products)')).toBeLessThan(chatSubmit.indexOf("fetch(`${API}/api/assistant`"));
+  });
+
   it('keeps unauthenticated owner dashboard judge-visible but strips actionable queue details', () => {
     const dashboard = read('api/owner/dashboard.ts');
     const app = read('src/web/App.tsx');

@@ -9,7 +9,8 @@
     "production": {
       "mcp": "live Steppe MCP",
       "usedFallback": false,
-      "proof": ["/api/mcp/smoke", "/api/mcp/audit", "/api/assistant"]
+      "proof": ["/api/mcp/smoke", "/api/mcp/audit"],
+      "claudeCodeCliProof": "local Express wrapper in src/server/assistant.ts shells to claude -p; deployed Vercel assistant currently proves live MCP and owner-safety semantics"
     },
     "localFallback": "deterministic simulator for credential-free local clone"
   },

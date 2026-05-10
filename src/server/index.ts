@@ -73,7 +73,7 @@ app.post('/api/demo/vertical-slice', async (req, res) => {
 });
 
 app.post('/api/telegram/owner-action', async (req, res) => {
-  if (process.env.OWNER_API_TOKEN && req.header('x-owner-token') !== process.env.OWNER_API_TOKEN) {
+  if (!process.env.OWNER_API_TOKEN || req.header('x-owner-token') !== process.env.OWNER_API_TOKEN) {
     return res.status(401).json({ error: 'owner_auth_required' });
   }
   const demo_run_id = `owner-${Date.now()}`;

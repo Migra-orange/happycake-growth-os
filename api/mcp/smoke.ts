@@ -22,6 +22,8 @@ function hasJsonRpcError(data: Record<string, unknown>) {
 function simulated() {
   return {
     ok: true,
+    mode: 'simulated',
+    usedFallback: true,
     source: 'simulated',
     tool: 'square_list_catalog',
     data: {
@@ -35,7 +37,15 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
   const started = Date.now();
   const teamToken = token();
 
-  if (!teamToken || process.env.MCP_MODE === 'simulated') {
+  if (!teamToken) {
+    if (process.env.MCP_MODE === 'live') {
+      return res.status(502).json({ ok: false, mode: 'live', usedFallback: false, source: 'mcp', tool: 'square_list_catalog', error: 'mcp_token_missing' });
+    }
+    const result = simulated();
+    return res.status(200).json({ ...result, latencyMs: Date.now() - started, note: 'Deterministic simulator is active for this deployment.' });
+  }
+
+  if (process.env.MCP_MODE === 'simulated') {
     const result = simulated();
     return res.status(200).json({ ...result, latencyMs: Date.now() - started, note: 'Deterministic simulator is active for this deployment.' });
   }
@@ -50,6 +60,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     const ok = upstream.ok && !hasJsonRpcError(data);
     return res.status(ok ? 200 : 502).json({
       ok,
+      mode: 'live',
+      usedFallback: false,
       source: 'mcp',
       tool: 'square_list_catalog',
       data,
@@ -58,7 +70,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     });
   } catch {
     if (process.env.MCP_MODE === 'live') {
-      return res.status(502).json({ ok: false, source: 'mcp', tool: 'square_list_catalog', error: 'mcp_smoke_failed' });
+      return res.status(502).json({ ok: false, mode: 'live', usedFallback: false, source: 'mcp', tool: 'square_list_catalog', error: 'mcp_smoke_failed' });
     }
     const result = simulated();
     return res.status(200).json({ ...result, latencyMs: Date.now() - started, note: 'MCP unavailable; safe simulator fallback is active.' });

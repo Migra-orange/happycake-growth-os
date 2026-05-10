@@ -86,6 +86,25 @@ function cleanShopperText(text = '') {
     .replace(/MCP/gi, 'system');
 }
 
+function localCakeGuidance(message: string, products: Product[]) {
+  const lower = message.toLowerCase();
+  const asksServingSize = /\b(serve|serves|serving|people|guests|person|persons|headcount)\b/.test(lower);
+  const headcountMatch = lower.match(/\b(\d{1,2}|twelve|ten|eight)\b/);
+  if (!asksServingSize && !headcountMatch) return '';
+  const requestedHeadcount = headcountMatch?.[1] === 'twelve' ? 12 : headcountMatch?.[1] === 'ten' ? 10 : headcountMatch?.[1] === 'eight' ? 8 : Number(headcountMatch?.[1] || 0);
+  const servingMatch = products.find(product => {
+    const servingCount = Number(product.serves.match(/\d+/)?.[0] || 0);
+    return requestedHeadcount > 0 && servingCount >= requestedHeadcount;
+  }) || products.find(product => product.serves.includes('10')) || products[0];
+  if (!servingMatch) {
+    return 'For serving size questions, choose from the cake menu and add your headcount and pickup window. The bakery confirms final fit and availability before fulfillment.';
+  }
+  if (requestedHeadcount > 0 && Number(servingMatch.serves.match(/\d+/)?.[0] || 0) < requestedHeadcount) {
+    return `${servingMatch.shortName || servingMatch.name} is listed as ${servingMatch.serves}. For ${requestedHeadcount} people, consider more than one cake or send the headcount with your pickup window so the bakery can confirm the right fit.`;
+  }
+  return `${servingMatch.shortName || servingMatch.name} is listed as ${servingMatch.serves}. Add your pickup window when you send the request, and the bakery will confirm final availability before fulfillment.`;
+}
+
 function InstagramShot({ post }: { post: BusinessProfile['instagram']['posts'][number] }) {
   return (
     <a className="instaPost instaShot" href={post.url} target="_blank" rel="noreferrer" aria-label={`Open ${post.title} on Instagram`}>
@@ -188,7 +207,7 @@ export default function App() {
 
   const jsonLd = useMemo(() => ({
     '@context': 'https://schema.org', '@type': 'Bakery', name: 'HappyCake', address: { '@type': 'PostalAddress', addressLocality: 'Sugar Land', addressRegion: 'TX' },
-    url: 'https://happycake.us', servesCuisine: 'cakes and desserts', makesOffer: products.map(p => ({ '@type': 'Offer', price: p.priceUsd, priceCurrency: 'USD', itemOffered: { '@type': 'Product', name: p.name, description: p.description, image: p.image } }))
+    url: 'https://happycake.us', servesCuisine: 'cakes and desserts', makesOffer: products.map(p => ({ '@type': 'Offer', itemOffered: { '@type': 'Product', name: p.name, description: p.description, image: p.image } }))
   }), [products]);
 
   function spinOffer() {
@@ -258,6 +277,11 @@ export default function App() {
     if (!message || chatLoading) return;
     setChatInput('');
     setChatMessages(list => [...list, { role: 'visitor', text: message }]);
+    const localReply = localCakeGuidance(message, products);
+    if (localReply) {
+      setChatMessages(list => [...list, { role: 'assistant', text: localReply }]);
+      return;
+    }
     setChatLoading(true);
     try {
       const res = await fetch(`${API}/api/assistant`, {
@@ -427,7 +451,7 @@ export default function App() {
       </section>
 
       <section className="catalogSection catalogAfterHero" id="catalog">
-        <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Shop the cake case.</h2></div><p>Best-seller style cards with price, size, serving guide, and one-tap order request.</p></div>
+         <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Shop the cake case.</h2></div><p>Best-seller style cards with price, size, serving guide, and one-tap order request. Demo menu prices shown for order-request flow; final bakery confirmation required before checkout.</p></div>
         <div className="categoryBar" aria-label="Cake shopping categories"><span>Best sellers</span><span>Birthday</span><span>Office</span><span>Gift</span><button onClick={() => setWheelOpen(true)}>5–50% discount wheel</button></div>
         <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
           <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{i === 0 ? 'Most loved' : p.tags[0]}</span></button>
