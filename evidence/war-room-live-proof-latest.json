@@ -1,0 +1,87 @@
+{
+  "timestamp": "2026-05-10T09:45:13.202Z",
+  "base": "https://happycake-growth-os.vercel.app",
+  "checks": {
+    "health": {
+      "ok": true,
+      "status": 200,
+      "service": "happycake-growth-os",
+      "runtime": "claude-code-cli",
+      "deployment": "vercel"
+    },
+    "mcpSmoke": {
+      "ok": true,
+      "status": 200,
+      "source": "mcp",
+      "usedFallback": false,
+      "mode": "live"
+    },
+    "mcpAudit": {
+      "ok": true,
+      "status": 200,
+      "usedFallback": false,
+      "failures": [],
+      "calls": 5
+    },
+    "mcpAuditPostUnauth": {
+      "ok": true,
+      "status": 401,
+      "error": "owner_auth_required"
+    },
+    "ownerDashboard": {
+      "ok": true,
+      "status": 200,
+      "mode": "live",
+      "storageMode": "vercel_blob",
+      "mcpSources": [
+        "mcp",
+        "mcp",
+        "mcp"
+      ],
+      "agents": 7
+    },
+    "ownerConfig": {
+      "ok": true,
+      "status": 200,
+      "storageMode": "vercel_blob",
+      "ownerAuthEnabled": true,
+      "durableConfigured": true
+    },
+    "assistantPending": {
+      "ok": true,
+      "status": 200,
+      "usedFallback": false,
+      "mcpSources": [
+        "mcp",
+        "mcp",
+        "mcp",
+        "mcp"
+      ],
+      "approvalId": "own_mozl7bs7",
+      "approvalStatus": "pending",
+      "executedSideEffects": []
+    },
+    "ownerActionUnauth": {
+      "ok": true,
+      "status": 401,
+      "error": "owner_auth_required"
+    },
+    "ownerActionApproveSynthetic": {
+      "ok": true,
+      "status": 200,
+      "approvalId": "own_mozl7bs7",
+      "executedSideEffects": [
+        "marketing_report_to_owner",
+        "square_create_order",
+        "kitchen_create_ticket"
+      ],
+      "mcpSources": [
+        "mcp",
+        "mcp",
+        "mcp"
+      ],
+      "idempotentReplay": false
+    }
+  },
+  "passed": true
+}
