@@ -103,6 +103,16 @@ Owner can:
 - mark kitchen status;
 - request edits.
 
+## Owner-bot mapping
+
+Hackathon owner actions are intentionally mapped to Telegram, not a second owner web app:
+
+- `HappyCake Owner Bot` — sends approval cards for order handoff, campaign, and uncertain-policy decisions. Backed by `api/telegram/webhook.ts`, `api/telegram/owner-action.ts`, and `src/server/telegram/cards.ts`.
+- `Sales Concierge Agent` — customer-facing website / Instagram / WhatsApp intake agent; it creates order intent and queues Telegram approval when side effects are needed.
+- `Local Demand Agent` — drafts $500/month campaign actions and routes owner approval/reporting through Telegram before any campaign handoff.
+- `Retention Agent` — captures birthday/reorder reminders and reports safe follow-up opportunities to the owner bot.
+- `Judge evidence cockpit` at `/#owner` is read-only/diagnostic for evaluators except token-gated action tests; real owner operation is Telegram-first.
+
 ## Data
 
 - `public/data/products.json`: agent-readable catalog.

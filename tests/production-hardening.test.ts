@@ -103,6 +103,17 @@ describe('production hardening gates', () => {
     expect(assistant).not.toContain("runtime: 'claude-code-cli'");
   });
 
+  it('documents hackathon-required owner-bot mapping in architecture', () => {
+    const architecture = read('ARCHITECTURE.md');
+
+    expect(architecture).toContain('## Owner-bot mapping');
+    expect(architecture).toContain('HappyCake Owner Bot');
+    expect(architecture).toContain('api/telegram/webhook.ts');
+    expect(architecture).toContain('api/telegram/owner-action.ts');
+    expect(architecture).toContain('Judge evidence cockpit');
+    expect(architecture).toContain('real owner operation is Telegram-first');
+  });
+
   it('keeps the manifest vertical slice owner-approval-first before POS/kitchen handoff', () => {
     const manifest = JSON.parse(read('public/agent-manifest.json')) as { verticalSlice: string };
 
@@ -129,6 +140,18 @@ describe('production hardening gates', () => {
     const sideEffectRunner = ownerAction.slice(ownerAction.indexOf('const runMissingApprovedSideEffects'));
     expect(sideEffectRunner.indexOf("call.source !== 'mcp'")).toBeLessThan(sideEffectRunner.indexOf('record.executedSideEffects = Array.from'));
     expect(sideEffectRunner.indexOf('hasMcpResultError(call.data)')).toBeLessThan(sideEffectRunner.indexOf('record.executedSideEffects = Array.from'));
+  });
+
+  it('keeps production owner approval live when Steppe side-effect tools require an audit wrapper', () => {
+    const ownerAction = read('api/telegram/owner-action.ts');
+
+    expect(ownerAction).toContain("const delegatedSideEffectTool = 'marketing_report_to_owner'");
+    expect(ownerAction).toContain('requestedTool: tool');
+    expect(ownerAction).toContain('delegatedTool: delegatedSideEffectTool');
+    expect(ownerAction).toContain('source: \'mcp\', tool');
+    expect(ownerAction).toContain('sideEffectDelegated: true');
+    const delegatedBranch = ownerAction.slice(ownerAction.indexOf('if (canDelegateSideEffect)'));
+    expect(delegatedBranch.indexOf('mcpEnvelope(delegatedSideEffectTool, delegatedInput)')).toBeLessThan(delegatedBranch.indexOf('const upstream = await fetch'));
   });
 
   it('keeps local Express owner actions fail-closed when the owner token is missing', () => {
