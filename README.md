@@ -35,7 +35,7 @@ npm run dev
 Open:
 
 - website: `http://localhost:5173`
-- API health: `http://localhost:8787/health`
+- API health: `http://localhost:8787/api/health`
 
 ## Demo commands
 
@@ -43,6 +43,7 @@ Open:
 npm run assistant:test
 npm run demo
 npm run evaluator:smoke
+npm run production:smoke
 npm run verify:sandbox
 npm run build
 npm test
@@ -63,7 +64,7 @@ Example:
 5. Owner receives Telegram approval card.
 6. Approval creates sandbox Square order and kitchen ticket.
 7. Customer reply is sent through the channel adapter.
-8. Evidence log records the whole path and `npm run evaluator:smoke` asserts the required timeline.
+8. Evidence log records the whole path and `npm run evaluator:smoke` writes deterministic proof to `evidence/evaluator-smoke-latest.json` while asserting the required timeline.
 
 ## Hackathon compliance
 
@@ -82,6 +83,11 @@ Example:
 - `/agent-manifest.json`
 - `/api/manifest`
 - `/api/evidence`
+
+## Deterministic evaluator proof
+
+- `npm run evaluator:smoke` writes `evidence/evaluator-smoke-latest.json` with normalized timeline/source proof and omits volatile UUIDs, timestamps, customer PII, and credentials.
+- `npm run production:smoke` writes `evidence/production-smoke-latest.json` with normalized live endpoint proof for `https://happycake-growth-os.vercel.app`.
 
 ## Why this helps the real business
 

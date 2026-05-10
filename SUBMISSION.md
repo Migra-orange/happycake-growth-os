@@ -24,7 +24,10 @@ Run:
 
 ```bash
 npm run verify:sandbox
+npm run production:smoke
 ```
+
+`npm run evaluator:smoke` writes `evidence/evaluator-smoke-latest.json`; `npm run production:smoke` writes `evidence/production-smoke-latest.json`. Both proof files are normalized to avoid volatile run IDs/timestamps and secrets.
 
 It must produce this required event chain:
 

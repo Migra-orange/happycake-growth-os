@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "host": "https://happycake-growth-os.vercel.app",
+  "ok": true,
+  "checks": [
+    {
+      "name": "health",
+      "path": "/api/health",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "service": "happycake-growth-os",
+        "runtime": "claude-code-cli",
+        "deployment": "vercel"
+      }
+    },
+    {
+      "name": "manifest",
+      "path": "/api/manifest",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "name": "HappyCake Growth OS",
+        "runtime": "claude-code-cli",
+        "ownerUi": "telegram",
+        "publicDemo": true
+      }
+    },
+    {
+      "name": "mcpSmoke",
+      "path": "/api/mcp/smoke",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "source": "mcp",
+        "tool": "square_list_catalog"
+      }
+    },
+    {
+      "name": "mcpAudit",
+      "path": "/api/mcp/audit",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "mode": "live",
+        "usedFallback": false,
+        "totalCalls": 5,
+        "failures": [],
+        "tools": [
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "square_list_catalog",
+            "httpStatus": 200
+          },
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "square_get_pos_summary",
+            "httpStatus": 200
+          },
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "kitchen_get_production_summary",
+            "httpStatus": 200
+          },
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "world_get_scenario_summary",
+            "httpStatus": 200
+          },
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "evaluator_get_evidence_summary",
+            "httpStatus": 200
+          }
+        ]
+      }
+    },
+    {
+      "name": "ownerDashboard",
+      "path": "/api/owner/dashboard",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "mode": "live",
+        "storageMode": "vercel_blob",
+        "agentCount": 7,
+        "mcpChecks": [
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "square_get_pos_summary"
+          },
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "kitchen_get_production_summary"
+          },
+          {
+            "ok": true,
+            "source": "mcp",
+            "tool": "evaluator_get_evidence_summary"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ownerConfig",
+      "path": "/api/owner/config",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "storageMode": "vercel_blob",
+        "ownerAuthEnabled": true,
+        "durableConfigured": true,
+        "agentCount": 7
+      }
+    },
+    {
+      "name": "ownerActionUnauth",
+      "path": "/api/telegram/owner-action",
+      "httpStatus": 401,
+      "ok": true,
+      "body": {
+        "error": "owner_auth_required"
+      }
+    },
+    {
+      "name": "agentManifest",
+      "path": "/agent-manifest.json",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "name": "HappyCake Growth OS",
+        "version": "0.1.0",
+        "runtime": {
+          "llm": "claude-code-cli",
+          "command": "claude -p",
+          "ownerUi": "Telegram",
+          "production": {
+            "mcp": "live Steppe MCP",
+            "usedFallback": false,
+            "proof": [
+              "/api/mcp/smoke",
+              "/api/mcp/audit",
+              "/api/assistant"
+            ]
+          },
+          "localFallback": "deterministic simulator for credential-free local clone"
+        },
+        "capabilities": [
+          "selling_storefront",
+          "agent_readable_catalog",
+          "onsite_assistant",
+          "whatsapp_instagram_order_intent",
+          "telegram_owner_approval",
+          "mcp_sandbox_adapter",
+          "evidence_logging",
+          "500_usd_marketing_plan"
+        ]
+      }
+    },
+    {
+      "name": "products",
+      "path": "/data/products.json",
+      "httpStatus": 200,
+      "ok": true,
+      "body": {
+        "brand": "HappyCake",
+        "locality": "Sugar Land, Texas",
+        "productCount": 4,
+        "guardrails": [
+          "Prices and product names come from HappyCake's published cake menu.",
+          "Pickup time, inventory, allergens, delivery, and special requests still require bakery confirmation.",
+          "Ready-made classic cakes first; decoration is small and optional, not custom cake production."
+        ]
+      }
+    }
+  ],
+  "proofFile": "evidence/production-smoke-latest.json",
+  "note": "Deterministic normalized production smoke proof; volatile timestamps, run IDs, latencies, and credentials are intentionally omitted."
+}

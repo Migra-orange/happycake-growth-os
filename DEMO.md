@@ -49,6 +49,7 @@ Expected evidence events:
 npm run assistant:test
 npm run demo
 npm run evaluator:smoke
+npm run production:smoke
 npm run verify:sandbox
 npm run verify
 ```
@@ -58,10 +59,12 @@ npm run verify
 - `evidence/<demo-run-id>.jsonl` — event stream
 - `evidence/<demo-run-id>.json` — evaluator-friendly summary
 
+`npm run evaluator:smoke` writes `evidence/evaluator-smoke-latest.json`, a deterministic normalized proof file that excludes volatile timestamps, UUIDs, customer PII, and credentials. `npm run production:smoke` writes `evidence/production-smoke-latest.json` for the live Vercel host.
+
 ## API checks
 
 ```bash
-curl http://localhost:8787/health
+curl http://localhost:8787/api/health
 curl http://localhost:8787/api/manifest
 curl http://localhost:8787/api/mcp/smoke
 

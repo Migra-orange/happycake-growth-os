@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "scenario": "Friday Office Dessert Drop",
+  "assistantMode": "simulated",
+  "mcpMode": "simulated",
+  "timelineOk": true,
+  "sourceOk": true,
+  "orderState": "customer_reply_sent",
+  "timelineVariant": "approved_handoff",
+  "requiredTimeline": [
+    "lead_received",
+    "mcp_tool_called",
+    "source_checked",
+    "order_intent_created",
+    "owner_approval_requested",
+    "owner_approved",
+    "pos_order_created",
+    "kitchen_ticket_created",
+    "customer_reply_sent"
+  ],
+  "missing": [],
+  "presentEvents": [
+    "lead_received",
+    "mcp_tool_called",
+    "mcp_tool_called",
+    "mcp_tool_called",
+    "mcp_tool_called",
+    "source_checked",
+    "order_intent_created",
+    "mcp_tool_called",
+    "owner_approval_requested",
+    "mcp_tool_called",
+    "owner_approved",
+    "mcp_tool_called",
+    "mcp_tool_called",
+    "pos_order_created",
+    "kitchen_ticket_created",
+    "mcp_tool_called",
+    "customer_reply_sent",
+    "mcp_tool_called"
+  ],
+  "eventCounts": {
+    "lead_received": 1,
+    "mcp_tool_called": 10,
+    "source_checked": 1,
+    "order_intent_created": 1,
+    "owner_approval_requested": 1,
+    "owner_approved": 1,
+    "pos_order_created": 1,
+    "kitchen_ticket_created": 1,
+    "customer_reply_sent": 1
+  },
+  "evidenceEvents": 18,
+  "mcpSources": [
+    "simulated"
+  ],
+  "proofFile": "evidence/evaluator-smoke-latest.json",
+  "note": "Deterministic normalized evaluator proof; volatile timestamps, UUIDs, customer PII, and credentials are intentionally omitted."
+}
