@@ -1,211 +1,80 @@
 {
-  "timestamp": "2026-05-10T10:37:36.310Z",
+  "timestamp": "2026-05-10T11:21:56.006016Z",
   "base": "https://happycake-growth-os.vercel.app",
-  "commit": "sfo1::iad1::bmmwk-1778409456687-5218508dfc15",
-  "checks": [
-    {
-      "name": "health",
-      "path": "/api/health",
-      "status": 200,
-      "ok": true,
-      "body": {
-        "ok": true,
-        "runtime": "claude-code-cli",
-        "localRuntime": "claude-code-cli",
-        "productionRuntime": "vercel_serverless_mcp_demo",
-        "claudeCliProductionExecuted": false,
-        "localProofPath": "src/server/assistant.ts",
-        "deployment": "vercel"
-      }
+  "assistant": {
+    "httpStatus": 200,
+    "usedFallback": false,
+    "mode": "live",
+    "mcpSources": [
+      "mcp"
+    ],
+    "requiredApprovalCount": 1,
+    "actionTypes": [
+      "lead_received",
+      "mcp_tool_called",
+      "mcp_tool_called",
+      "mcp_tool_called",
+      "mcp_tool_called",
+      "source_checked",
+      "order_intent_created",
+      "owner_approval_requested",
+      "customer_reply_sent"
+    ],
+    "executedBeforeApproval": false
+  },
+  "pendingApproval": {
+    "approvalId": "own_mozonnjq",
+    "intentId": "intent_mozonnjq",
+    "status": "pending",
+    "executedSideEffects": null
+  },
+  "ownerActionUnauth": {
+    "httpStatus": 401,
+    "error": "owner_auth_required"
+  },
+  "approvedSynthetic": {
+    "httpStatus": 200,
+    "ok": true,
+    "approvalStatus": "approved",
+    "executedSideEffects": [
+      "marketing_report_to_owner",
+      "square_create_order",
+      "kitchen_create_ticket"
+    ],
+    "mcpSources": [
+      "mcp"
+    ],
+    "mcpTools": [
+      "marketing_report_to_owner",
+      "square_create_order",
+      "kitchen_create_ticket"
+    ],
+    "idempotentReplay": false
+  },
+  "commit": "839ab21",
+  "deploymentAlias": "https://happycake-growth-os.vercel.app",
+  "browserQa": {
+    "buyer": {
+      "consoleErrors": 0,
+      "forbiddenInternalTerms": [],
+      "hasCakeBuyerHero": true
     },
-    {
-      "name": "mcpSmoke",
-      "path": "/api/mcp/smoke",
-      "status": 200,
-      "ok": true,
-      "body": {
-        "ok": true,
-        "mode": "live",
-        "source": "mcp",
-        "usedFallback": false,
-        "tool": "square_list_catalog"
-      }
-    },
-    {
-      "name": "mcpAudit",
-      "path": "/api/mcp/audit",
-      "status": 200,
-      "ok": true,
-      "body": {
-        "ok": true,
-        "mode": "live",
-        "usedFallback": false,
-        "failures": [],
-        "totalCalls": 5,
-        "calls": [
-          {
-            "tool": "square_list_catalog",
-            "source": "mcp",
-            "ok": true,
-            "httpStatus": 200
-          },
-          {
-            "tool": "square_get_pos_summary",
-            "source": "mcp",
-            "ok": true,
-            "httpStatus": 200
-          },
-          {
-            "tool": "kitchen_get_production_summary",
-            "source": "mcp",
-            "ok": true,
-            "httpStatus": 200
-          },
-          {
-            "tool": "world_get_scenario_summary",
-            "source": "mcp",
-            "ok": true,
-            "httpStatus": 200
-          },
-          {
-            "tool": "evaluator_get_evidence_summary",
-            "source": "mcp",
-            "ok": true,
-            "httpStatus": 200
-          }
-        ]
-      }
-    },
-    {
-      "name": "ownerDashboard",
-      "path": "/api/owner/dashboard",
-      "status": 200,
-      "ok": true,
-      "body": {
-        "ok": true,
-        "mode": "live",
-        "storageMode": "vercel_blob",
-        "agentCount": 7,
-        "mcpChecks": [
-          {
-            "tool": "square_get_pos_summary",
-            "source": "mcp",
-            "ok": true
-          },
-          {
-            "tool": "kitchen_get_production_summary",
-            "source": "mcp",
-            "ok": true
-          },
-          {
-            "tool": "evaluator_get_evidence_summary",
-            "source": "mcp",
-            "ok": true
-          }
-        ]
-      }
-    },
-    {
-      "name": "ownerConfig",
-      "path": "/api/owner/config",
-      "status": 200,
-      "ok": true,
-      "body": {
-        "ok": true,
-        "storageMode": "vercel_blob",
-        "durableConfigured": true,
-        "ownerAuthEnabled": true,
-        "agentCount": 7
-      }
-    },
-    {
-      "name": "assistant",
-      "path": "/api/assistant",
-      "status": 200,
-      "ok": true,
-      "body": {
-        "mode": "live",
-        "usedFallback": false,
-        "mcpChecks": [
-          {
-            "tool": "square_list_catalog",
-            "source": "mcp",
-            "ok": true
-          },
-          {
-            "tool": "square_get_pos_summary",
-            "source": "mcp",
-            "ok": true
-          },
-          {
-            "tool": "kitchen_get_production_summary",
-            "source": "mcp",
-            "ok": true
-          },
-          {
-            "tool": "evaluator_get_evidence_summary",
-            "source": "mcp",
-            "ok": true
-          }
-        ],
-        "approval": {
-          "status": "pending",
-          "approvalId": "own_mozn2p1f",
-          "intentId": "intent_mozn2p1f",
-          "sideEffectsIfApproved": [
-            "square_create_order",
-            "kitchen_create_ticket",
-            "send customer reply"
-          ]
-        },
-        "orderIntentState": "customer_reply_sent"
-      }
-    },
-    {
-      "name": "ownerUnauth",
-      "path": "/api/telegram/owner-action",
-      "status": 401,
-      "ok": true,
-      "body": {
-        "error": "owner_auth_required"
-      }
-    },
-    {
-      "name": "ownerApprove",
-      "path": "/api/telegram/owner-action",
-      "status": 200,
-      "ok": true,
-      "body": {
-        "ok": true,
-        "approval": {
-          "status": "approved",
-          "executedSideEffects": [
-            "marketing_report_to_owner",
-            "square_create_order",
-            "kitchen_create_ticket"
-          ],
-          "decisionSource": "telegram"
-        },
-        "mcpCalls": [
-          {
-            "tool": "marketing_report_to_owner",
-            "source": "mcp",
-            "ok": true
-          },
-          {
-            "tool": "square_create_order",
-            "source": "mcp",
-            "ok": true
-          },
-          {
-            "tool": "kitchen_create_ticket",
-            "source": "mcp",
-            "ok": true
-          }
-        ]
-      }
+    "ownerHashRoute": {
+      "url": "/#owner/dashboard",
+      "consoleErrors": 0,
+      "visible": true,
+      "liveSandboxConnected": true,
+      "checksGreen": "3/3",
+      "storageMode": "vercel_blob",
+      "screenshot": "/Users/didarmacmini/.hermes/cache/screenshots/browser_screenshot_455c7125da484699a9529796e732e6fd.png"
     }
+  },
+  "runTodo": [
+    "Audit docs/repo/production with specialist agents",
+    "Fix highest-impact judge blocker: documented owner hash route",
+    "Run local build/test/verify/secrets gates",
+    "Commit, push, deploy production",
+    "Re-run live MCP/approval/browser proof"
   ],
-  "approve": "synthetic approved",
-  "ok": true
+  "updatedAt": "2026-05-10T11:22:51.707754Z"
 }
