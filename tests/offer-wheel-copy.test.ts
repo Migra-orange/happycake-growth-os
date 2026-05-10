@@ -15,4 +15,14 @@ describe('offer wheel discounts', () => {
       expect(offerBlock).not.toContain(oldLabel);
     }
   });
+
+  it('does not reveal a won discount code until the shopper leaves contact details', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+    const wheelMarkup = source.slice(source.indexOf('{wheelOpen &&'), source.indexOf('<nav className="topbar">'));
+
+    expect(wheelMarkup).toContain('Send my code');
+    expect(source).toContain('/api/discount-claim');
+    expect(wheelMarkup).toContain('Where should we send it?');
+    expect(wheelMarkup).not.toContain("<strong>{offer.angle === 'none' ? 'Nothing' : offer.code}</strong>");
+  });
 });

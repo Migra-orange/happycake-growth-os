@@ -61,6 +61,12 @@ export default function App() {
   const [wheelOpen, setWheelOpen] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [wheelRotation, setWheelRotation] = useState(0);
+  const [promoName, setPromoName] = useState('');
+  const [promoPhone, setPromoPhone] = useState('');
+  const [promoEmail, setPromoEmail] = useState('');
+  const [promoClaim, setPromoClaim] = useState<{ promoCode:string; discountPercent:number } | null>(null);
+  const [promoStatus, setPromoStatus] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
   const [result, setResult] = useState<AssistantResponse | null>(null);
   const [ownerResult, setOwnerResult] = useState('');
   const [loading, setLoading] = useState(false);
@@ -133,6 +139,9 @@ export default function App() {
     const slice = 360 / offers.length;
     const targetCenter = nextIndex * slice + slice / 2;
     setOffer(null);
+    setPromoClaim(null);
+    setPromoStatus('');
+    if (name && !promoName) setPromoName(name);
     setSpinning(true);
     setWheelRotation(previous => {
       const normalized = ((previous % 360) + 360) % 360;
@@ -147,17 +156,17 @@ export default function App() {
 
   function startOrder(product: Product) {
     setSelected(product);
-    setNote(`I would like ${product.name}${offer && offer.angle === 'discount' ? ` with code ${offer.code}` : ''}.`);
+    setNote(`I would like ${product.name}${promoClaim ? ` with code ${promoClaim.promoCode}` : ''}.`);
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   async function submitOrder() {
     const product = selected || featured;
     if (!product) return;
-    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Pickup: ${pickup}. Headcount: ${headcount}. ${offer && offer.angle === 'discount' ? `Offer code: ${offer.code} — ${offer.value}. ` : ''}${note}`;
+    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Pickup: ${pickup}. Headcount: ${headcount}. ${promoClaim ? `Offer code: ${promoClaim.promoCode} — ${promoClaim.discountPercent}% off. ` : ''}${note}`;
     setLoading(true);
     setOwnerResult('');
-    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: offer?.angle === 'discount' ? offer.code : undefined }) });
+    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: promoClaim?.promoCode }) });
     const data = await res.json();
     setResult(data);
     if (data?.requiredApprovals?.[0]) {
@@ -202,6 +211,28 @@ export default function App() {
         approvalQueue: (current.approvalQueue || []).map(item => item.approvalId === approvalId ? { ...item, status: data.approval.status, decisionAt: data.approval.decisionAt, decisionSource: data.approval.decisionSource, executedSideEffects: data.approval.executedSideEffects || [] } : item)
       } : current);
     }
+  }
+
+  async function claimDiscountCode() {
+    if (!offer || offer.angle !== 'discount') return;
+    setPromoLoading(true);
+    setPromoStatus('');
+    try {
+      const res = await fetch(`${API}/api/discount-claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: promoName, phone: promoPhone, email: promoEmail, discountPercent: offer.discountPercent, sourceCode: offer.code, source: 'spin-wheel' })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error || 'discount_claim_failed');
+      setPromoClaim({ promoCode: data.claim.promoCode, discountPercent: data.claim.discountPercent });
+      setPromoStatus(`Sent — use ${data.claim.promoCode} at checkout.`);
+      if (!name && promoName) setName(promoName);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'discount_claim_failed';
+      setPromoStatus(message === 'name_required' ? 'Add your name first.' : message === 'contact_required' ? 'Add a phone number or email.' : 'Add a valid phone number or email.');
+    }
+    setPromoLoading(false);
   }
 
   async function submitBirthdayReminder() {
@@ -273,7 +304,16 @@ export default function App() {
             <b>{spinning ? 'Spinning…' : offer ? offer.label : 'SPIN'}</b>
           </button>
         </div>
-        {offer && <div className={`wonOffer ${offer.angle === 'none' ? 'emptyOffer' : ''}`}><small>{offer.angle === 'none' ? 'Result' : 'Your code'}</small><strong>{offer.angle === 'none' ? 'Nothing' : offer.code}</strong><p>{offer.value}. {offer.angle === 'discount' ? 'Bakery confirms final availability and pickup.' : 'You can spin again later or choose a cake now.'}</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
+        {offer && offer.angle === 'none' && <div className="wonOffer emptyOffer"><small>Result</small><strong>Nothing</strong><p>{offer.value}. You can still choose a cake now.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
+        {offer && offer.angle === 'discount' && <div className="wonOffer claimOffer"><small>You won</small><strong>{offer.label}</strong><p>Where should we send it? Add your name and phone or email to receive your individual checkout code.</p>
+          {!promoClaim ? <div className="claimForm">
+            <label>Name <input value={promoName} onChange={e => setPromoName(e.target.value)} placeholder="Your name" /></label>
+            <label>Phone <input value={promoPhone} onChange={e => setPromoPhone(e.target.value)} placeholder="(832) 555-0101" inputMode="tel" /></label>
+            <label>Email <input value={promoEmail} onChange={e => setPromoEmail(e.target.value)} placeholder="you@example.com" inputMode="email" /></label>
+            <button className="primary wide" onClick={claimDiscountCode} disabled={promoLoading || !promoName.trim() || (!promoPhone.trim() && !promoEmail.trim())}>{promoLoading ? 'Sending code…' : 'Send my code'}</button>
+          </div> : <div className="promoCodeBox"><small>Your individual code</small><strong>{promoClaim.promoCode}</strong><p>Use it at checkout to get {promoClaim.discountPercent}% off.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
+          {promoStatus && <p className="birthdayStatus">{promoStatus}</p>}
+        </div>}
       </div>
     </div>}
 
@@ -295,7 +335,7 @@ export default function App() {
           <h1>Choose a cake. Spin your treat. Send the request.</h1>
           <p className="lead">Classic HappyCake flavors with clear prices, soft order perks, and a simple request flow. Pick your cake now — the bakery confirms pickup and final details before fulfillment.</p>
           <div className="heroActions"><a className="primary" href="#catalog">Shop cakes</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin the treat wheel</button></div>
-          {offer && <div className="offerRibbon"><span>{offer.angle === 'discount' ? offer.code : 'TRY AGAIN'}</span>{offer.value}</div>}
+          {promoClaim && <div className="offerRibbon"><span>{promoClaim.promoCode}</span>{promoClaim.discountPercent}% off saved for checkout</div>}
         </div>
         <div className="heroShowcase">
           <img className="showcaseMain" src="/assets/hero/happy-cake-hero-02.webp" alt="HappyCake cakes" />
@@ -326,7 +366,7 @@ export default function App() {
           <p className="eyebrow">Order request</p>
           <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
           {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>${selected.priceUsd}</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
-          {offer && <div className="offerApplied"><b>{offer.angle === 'discount' ? offer.code : 'No discount'}</b><span>{offer.value}</span></div>}
+          {promoClaim && <div className="offerApplied"><b>{promoClaim.promoCode}</b><span>{promoClaim.discountPercent}% off saved for checkout</span></div>}
         </div>
         <div className="orderForm">
           <label>Your name <input value={name} onChange={e=>setName(e.target.value)} placeholder="Optional" /></label>
@@ -362,7 +402,7 @@ export default function App() {
 
       <section className="marketingSection">
         <div><p className="eyebrow">Why order here</p><h2>Simple cake buying, not back-and-forth guessing.</h2></div>
-        <div className="hookGrid"><article><b>Clear menu</b><p>See flavor, size, serving estimate, and price before you message.</p></article><article><b>Small perks</b><p>Spin once for candles, a note, a discount, or priority review.</p></article><article><b>Human confirmation</b><p>Pickup time, availability, and special notes are confirmed before fulfillment.</p></article></div>
+        <div className="hookGrid"><article><b>Clear menu</b><p>See flavor, size, serving estimate, and price before you message.</p></article><article><b>Private discount</b><p>Spin, leave your contact, and get an individual checkout code if you win.</p></article><article><b>Human confirmation</b><p>Pickup time, availability, and special notes are confirmed before fulfillment.</p></article></div>
       </section>
     </>}
 

@@ -127,6 +127,13 @@ main { min-height: 100vh; overflow: hidden; }
 .wonOffer small { display: block; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-weight: 950; }
 .wonOffer strong { display: block; margin: 4px 0; font-size: 34px; color: var(--berry); letter-spacing: -.04em; }
 .wonOffer p { color: var(--muted); }
+.claimOffer { display: grid; gap: 10px; }
+.claimForm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; }
+.claimForm label { display: grid; gap: 6px; color: var(--brown); font-weight: 850; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.claimForm label:first-child, .claimForm .wide { grid-column: 1 / -1; }
+.claimForm input { width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 12px 13px; background: rgba(255,255,255,.82); color: var(--ink); font: inherit; font-weight: 750; }
+.promoCodeBox { display: grid; gap: 6px; border-radius: 18px; padding: 12px; background: rgba(255,247,234,.78); border: 1px solid rgba(233,75,123,.22); }
+.promoCodeBox strong { color: var(--berry); }
 .ownerHero { position: relative; grid-template-columns: 1fr 390px; background: var(--brown); color: var(--cream); border-radius: 44px; padding: clamp(30px, 5vw, 64px); overflow: hidden; }
 .ownerHero h1 { color: var(--cream); }
 .ownerHero .lead { color: rgba(255,247,234,.75); }
