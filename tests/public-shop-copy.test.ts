@@ -122,4 +122,14 @@ describe('public shop copy', () => {
     expect(shop).toContain('disabled={loading || !selected}');
     expect(shop).toContain("{!selected ? 'Choose a cake first' : loading ? 'Sending order request…' : 'Send order request'}");
   });
+
+  it('opens the owner cockpit for every documented owner hash route', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+
+    expect(source).toContain("/^#owner(?:$|[/?])/.test(hash)");
+    expect(source).toContain("new URLSearchParams(search).get('owner') === '1'");
+    expect(source).toContain("history.replaceState(null, '', '#owner/dashboard')");
+    expect(source).not.toContain("hash.startsWith('#owner')");
+    expect(source).not.toContain("search.includes('owner=1')");
+  });
 });

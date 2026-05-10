@@ -20,6 +20,10 @@ type AgentConfigResponse = { ok:boolean; agents:AgentConfig[]; version:number; u
 
 const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
+function isOwnerRoute(hash = '', search = '') {
+  return /^#owner(?:$|[/?])/.test(hash) || new URLSearchParams(search).get('owner') === '1';
+}
+
 const offers: Offer[] = [
   { label: '5% off', value: 'Take 5% off your cake request', code: 'CAKE5', angle: 'discount', discountPercent: 5 },
   { label: '10% off', value: 'Take 10% off your cake request', code: 'CAKE10', angle: 'discount', discountPercent: 10 },
@@ -126,7 +130,7 @@ function businessHandle(note = '') {
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [growth, setGrowth] = useState<GrowthModel | null>(null);
-  const [view, setView] = useState<'shop' | 'owner'>(() => (typeof window !== 'undefined' && (window.location.hash === '#owner' || window.location.search.includes('owner=1')) ? 'owner' : 'shop'));
+  const [view, setView] = useState<'shop' | 'owner'>(() => (typeof window !== 'undefined' && isOwnerRoute(window.location.hash, window.location.search) ? 'owner' : 'shop'));
   const [channel, setChannel] = useState<Channel>('website');
   const [name, setName] = useState('');
   const [contactDetail, setContactDetail] = useState('');
@@ -430,7 +434,7 @@ export default function App() {
         <a className="ghost socialLink" href={businessProfile.instagram.url} target="_blank" rel="noreferrer">Instagram</a>
         <a className="ghost socialLink" href={businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer">Map</a>
         <button className={view === 'shop' ? 'active' : 'ghost'} onClick={() => { setView('shop'); history.replaceState(null, '', '/'); }}>Shop cakes</button>
-        {view === 'owner' && <button className="active" onClick={() => { setView('owner'); history.replaceState(null, '', '#owner'); }}>Owner</button>}
+        {view === 'owner' && <button className="active" onClick={() => { setView('owner'); history.replaceState(null, '', '#owner/dashboard'); }}>Owner</button>}
       </div>
     </nav>
 
