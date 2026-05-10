@@ -457,3 +457,34 @@ main { min-height: 100vh; overflow: hidden; }
   .categoryBar span, .categoryBar button { white-space: nowrap; }
   .occasionGrid article, .trustGrid article { min-height: auto; }
 }
+
+
+/* Contact, reviews, onsite chat, and agent-readable surface */
+.socialLink { text-decoration: none; display: inline-flex; align-items: center; }
+.connectSection { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; align-items: stretch; }
+.connectCard { background: rgba(255,255,255,.84); border: 1px solid rgba(72,42,29,.12); border-radius: 30px; padding: clamp(20px, 3vw, 30px); box-shadow: 0 24px 70px rgba(56,33,21,.08); }
+.connectCard h2 { margin: 6px 0 10px; font-size: clamp(1.25rem, 2.5vw, 2rem); }
+.connectCard p { color: #6e574d; line-height: 1.55; }
+.connectActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.connectActions a { text-decoration: none; }
+.reviewEmpty { margin-top: 18px; display: grid; gap: 6px; background: #fff8f0; border: 1px dashed rgba(132,78,54,.3); border-radius: 18px; padding: 16px; color: #6a4d43; }
+.reviewEmpty b { color: #3a2118; }
+.reviewEmpty span { font-size: .92rem; line-height: 1.45; }
+.chatCard { grid-row: span 2; display: flex; flex-direction: column; }
+.miniChat { flex: 1; min-height: 190px; display: flex; flex-direction: column; justify-content: center; }
+.chatMessages { display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow: auto; padding: 4px; }
+.chatMessages p { margin: 0; display: flex; }
+.chatMessages p span { max-width: 88%; padding: 12px 14px; border-radius: 18px; line-height: 1.45; }
+.chatMessages .assistant span { background: #fff4e4; color: #4b3026; border-bottom-left-radius: 6px; }
+.chatMessages .visitor { justify-content: flex-end; }
+.chatMessages .visitor span { background: #3a2118; color: #fff; border-bottom-right-radius: 6px; }
+.chatInput { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 14px; }
+.chatInput input { border: 1px solid rgba(72,42,29,.16); border-radius: 16px; padding: 12px 14px; font: inherit; background: #fff; }
+.chatInput button { border: 0; border-radius: 16px; padding: 0 18px; font-weight: 800; background: #3a2118; color: white; cursor: pointer; }
+.chatInput button:disabled { opacity: .55; cursor: not-allowed; }
+.agentReadableCard { background: #2d1a14; color: #fff8ef; }
+.agentReadableCard p, .agentReadableCard .eyebrow { color: rgba(255,248,239,.78); }
+.agentReadableCard h2 { color: #fff; }
+.agentLinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.agentLinks a { color: #3a2118; background: #fff5e6; border-radius: 999px; padding: 9px 12px; text-decoration: none; font-weight: 800; font-size: .9rem; }
+@media (max-width: 900px) { .connectSection { grid-template-columns: 1fr; } .chatCard { grid-row: auto; } .navActions .socialLink { display: none; } }

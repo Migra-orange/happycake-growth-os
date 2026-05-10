@@ -1,0 +1,26 @@
+{
+  "brand": "HappyCake",
+  "locality": "Sugar Land, Texas",
+  "instagram": {
+    "handle": "@happycake.us",
+    "url": "https://www.instagram.com/happycake.us/",
+    "label": "Instagram"
+  },
+  "googleMaps": {
+    "label": "HappyCake Sugar Land on Google Maps",
+    "searchUrl": "https://www.google.com/maps/search/?api=1&query=HappyCake%20Sugar%20Land%20Texas",
+    "status": "search_link_until_verified_business_profile_connected"
+  },
+  "reviews": {
+    "source": "Google reviews when Google Business Profile is connected",
+    "status": "not_live_connected",
+    "summary": "Review feed is ready for Google Business Profile data; until connected, shoppers can open the map profile to inspect the latest public reviews.",
+    "items": []
+  },
+  "agentReadable": {
+    "llmsTxt": "/llms.txt",
+    "manifest": "/agent-manifest.json",
+    "catalog": "/data/products.json",
+    "assistant": "/api/assistant"
+  }
+}

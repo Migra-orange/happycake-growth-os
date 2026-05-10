@@ -3,6 +3,8 @@ import type { CSSProperties } from 'react';
 import type { AssistantResponse } from '../shared/schema';
 
 type Product = { id:string; name:string; shortName:string; priceUsd:number; weight:string; serves:string; availabilityPolicy:string; tags:string[]; image:string; description:string };
+type BusinessProfile = { brand:string; locality:string; instagram:{ handle:string; url:string; label:string }; googleMaps:{ label:string; searchUrl:string; status:string }; reviews:{ source:string; status:string; summary:string; items:{ author:string; text:string; rating:number }[] }; agentReadable:{ llmsTxt:string; manifest:string; catalog:string; assistant:string } };
+type ChatMessage = { role:'visitor' | 'assistant'; text:string };
 type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
 type Offer = { label:string; value:string; code:string; angle:'discount' | 'none'; discountPercent?:number };
@@ -37,8 +39,17 @@ const occasionTiles = [
 const landingHighlights = [
   'Shop by real cake menu',
   'Pickup reviewed before confirmation',
-  'Individual checkout code after contact claim'
+  'Instagram, map, and AI helper ready'
 ];
+
+const fallbackBusinessProfile: BusinessProfile = {
+  brand: 'HappyCake',
+  locality: 'Sugar Land, Texas',
+  instagram: { handle: '@happycake.us', url: 'https://www.instagram.com/happycake.us/', label: 'Instagram' },
+  googleMaps: { label: 'HappyCake Sugar Land on Google Maps', searchUrl: 'https://www.google.com/maps/search/?api=1&query=HappyCake%20Sugar%20Land%20Texas', status: 'search_link_until_verified_business_profile_connected' },
+  reviews: { source: 'Google reviews when Google Business Profile is connected', status: 'not_live_connected', summary: 'Open the map profile to read the latest public reviews; live Google review sync can be connected when profile access is available.', items: [] },
+  agentReadable: { llmsTxt: '/llms.txt', manifest: '/agent-manifest.json', catalog: '/data/products.json', assistant: '/api/assistant' }
+};
 
 const ownerWorkstreams = [
   { label: 'Cold lead mining', owner: 'Local demand scout', action: 'Finds local moments the owner can attack today.' },
@@ -104,9 +115,15 @@ export default function App() {
   const [birthdayConsent, setBirthdayConsent] = useState(true);
   const [birthdayStatus, setBirthdayStatus] = useState('');
   const [birthdayLoading, setBirthdayLoading] = useState(false);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile>(fallbackBusinessProfile);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{ role: 'assistant', text: 'Hi — ask me about cakes, serving size, pickup request details, or which cake fits your occasion.' }]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
+    fetch('/data/business-profile.json').then(r => r.json()).then(setBusinessProfile).catch(() => {});
     fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth).catch(() => {});
     refreshDashboard();
     setOwnerToken(localStorage.getItem('happycake-owner-token') || '');
@@ -210,6 +227,27 @@ export default function App() {
     }
     setShowTrail(false);
     setLoading(false);
+  }
+
+  async function submitChatMessage() {
+    const message = chatInput.trim();
+    if (!message || chatLoading) return;
+    setChatInput('');
+    setChatMessages(list => [...list, { role: 'visitor', text: message }]);
+    setChatLoading(true);
+    try {
+      const res = await fetch(`${API}/api/assistant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: 'website', customerName: name || 'Website visitor', message, source: 'happycake-onsite-chat', requireOwnerApproval: true })
+      });
+      const data: AssistantResponse = await res.json();
+      setChatMessages(list => [...list, { role: 'assistant', text: cleanShopperText(data.reply || 'Thanks — send an order request when you are ready and the bakery will confirm details.') }]);
+      setResult(data);
+    } catch {
+      setChatMessages(list => [...list, { role: 'assistant', text: 'I can help with menu questions and order notes. Please try again in a moment.' }]);
+    }
+    setChatLoading(false);
   }
 
   async function ownerApprove(action: 'approve_order_handoff' | 'reject_campaign', queueItem?: ApprovalQueueItem) {
@@ -341,6 +379,8 @@ export default function App() {
         <span><b>HappyCake</b><small>Sugar Land cake shop</small></span>
       </button>
       <div className="navActions">
+        <a className="ghost socialLink" href={businessProfile.instagram.url} target="_blank" rel="noreferrer">Instagram</a>
+        <a className="ghost socialLink" href={businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer">Map</a>
         <button className={view === 'shop' ? 'active' : 'ghost'} onClick={() => { setView('shop'); history.replaceState(null, '', '/'); }}>Shop cakes</button>
         <button className={view === 'owner' ? 'active' : 'ghost'} onClick={() => { setView('owner'); history.replaceState(null, '', '#owner'); }}>Owner</button>
       </div>
@@ -379,6 +419,39 @@ export default function App() {
       <section className="landingSection confidenceSection">
         <div className="confidenceCopy"><p className="eyebrow">How ordering works</p><h2>Request first. Confirmation before commitment.</h2><p>Premium cake sites reduce anxiety: what it costs, how many it serves, and what happens after you click. HappyCake keeps that clear without pretending live availability is guaranteed.</p></div>
         <div className="trustGrid">{shopTrustPoints.map(point => <article key={point.title}><span>{point.stage}</span><b>{point.title}</b><p>{point.detail}</p></article>)}</div>
+      </section>
+
+      <section className="landingSection connectSection" id="connect">
+        <div className="connectCard socialCard">
+          <p className="eyebrow">Social + location</p>
+          <h2>See the bakery where shoppers already look.</h2>
+          <p>Open Instagram for cake visuals, or open the map profile to confirm directions and read the latest public Google reviews.</p>
+          <div className="connectActions">
+            <a className="primary" href={businessProfile.instagram.url} target="_blank" rel="noreferrer">Instagram {businessProfile.instagram.handle}</a>
+            <a className="secondary" href={businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer">Open map</a>
+          </div>
+        </div>
+        <div className="connectCard reviewCard">
+          <p className="eyebrow">Google reviews</p>
+          <h2>Review feed ready.</h2>
+          <p>{businessProfile.reviews.summary}</p>
+          <div className="reviewEmpty"><b>Live reviews need profile access</b><span>No fake quotes shown. Connect Google Business Profile to display real rating, review snippets, and review count here.</span></div>
+        </div>
+        <div className="connectCard chatCard">
+          <div className="sectionHeader compact"><div><p className="eyebrow">Onsite helper</p><h2>Ask HappyCake AI.</h2></div><button className="linkButton" onClick={() => setChatOpen(!chatOpen)}>{chatOpen ? 'Close' : 'Open chat'}</button></div>
+          <div className="miniChat">
+            {chatOpen ? <>
+              <div className="chatMessages">{chatMessages.map((message, i) => <p className={message.role} key={`${message.role}-${i}`}><span>{message.text}</span></p>)}</div>
+              <div className="chatInput"><input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') submitChatMessage(); }} placeholder="Ask which cake fits 12 people…" /><button onClick={submitChatMessage} disabled={chatLoading || !chatInput.trim()}>{chatLoading ? 'Asking…' : 'Send'}</button></div>
+            </> : <p>Quickly ask about cake choice, serving size, pickup request notes, or discount code flow.</p>}
+          </div>
+        </div>
+        <div className="connectCard agentReadableCard">
+          <p className="eyebrow">For shopping agents</p>
+          <h2>Readable site map.</h2>
+          <p>Autonomous browsers can read the catalog, assistant contract, and storefront rules without scraping the UI.</p>
+          <div className="agentLinks"><a href="/llms.txt">/llms.txt</a><a href="/agent-manifest.json">/agent-manifest.json</a><a href="/data/products.json">/data/products.json</a></div>
+        </div>
       </section>
 
       {selected && <section className="orderStage" id="order">

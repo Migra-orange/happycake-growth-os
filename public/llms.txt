@@ -1,0 +1,37 @@
+# HappyCake
+
+Sugar Land cake shop storefront for shoppers and autonomous shopping agents.
+
+## Human shopping flow
+- Browse the menu: /data/products.json
+- Choose a cake card and send an order request on the site.
+- Optional discount wheel: claim requires name plus phone or email before an individual code is shown.
+- Bakery confirms final pickup details, availability, allergens, and fulfillment before commitment.
+
+## Agent-readable resources
+- Product catalog JSON: /data/products.json
+- Public business profile: /data/business-profile.json
+- Agent manifest: /agent-manifest.json
+- Onsite assistant endpoint: /api/assistant
+- MCP smoke evidence: /api/mcp/smoke
+
+## Assistant endpoint
+POST /api/assistant
+Content-Type: application/json
+
+Minimal body:
+```json
+{
+  "channel": "website",
+  "customerName": "Website visitor",
+  "message": "I want to order Honey cake for 10 guests tomorrow afternoon.",
+  "source": "happycake-onsite-chat",
+  "requireOwnerApproval": true
+}
+```
+
+## Guardrails
+- Do not invent availability, hours, allergens, delivery, pickup time, or final order status.
+- Use only visible catalog prices and serving info unless a verified source returns more.
+- Customer-facing copy should be warm, simple, and in English.
+- Side effects such as order handoff or kitchen ticket require bakery approval.

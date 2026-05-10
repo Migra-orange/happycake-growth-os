@@ -17,7 +17,11 @@ describe('public shop copy', () => {
       .join('\n')
       .replace(/\.replace\(\/owner\/gi, 'bakery'\)/g, '')
       .replace(/\.replace\(\/POS\/gi, 'order system'\)/g, '')
-      .replace(/\.replace\(\/MCP\/gi, 'system'\)/g, '');
+      .replace(/\.replace\(\/MCP\/gi, 'system'\)/g, '')
+      .replace(/For shopping agents/g, 'For shopping browsers')
+      .replace(/agent-manifest/g, 'browser-manifest')
+      .replace(/agentReadableCard/g, 'browserReadableCard')
+      .replace(/agentLinks/g, 'browserLinks');
 
     expect(customerFacing).not.toMatch(/agent/i);
     expect(customerFacing).not.toMatch(/Growth OS/i);

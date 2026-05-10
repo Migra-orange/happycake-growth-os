@@ -26,6 +26,8 @@
     "mcpSmoke": "/api/mcp/smoke",
     "evidence": "/api/evidence",
     "products": "/data/products.json",
+    "businessProfile": "/data/business-profile.json",
+    "llmsTxt": "/llms.txt",
     "growthModel": "/data/growth-model.json"
   },
   "guardrails": [
