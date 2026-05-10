@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { AssistantResponse } from '../shared/schema';
 
 type Product = { id:string; name:string; shortName:string; priceUsd:number; weight:string; serves:string; availabilityPolicy:string; tags:string[]; image:string; description:string };
 type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
-type Offer = { label:string; value:string; code:string; angle:string };
+type Offer = { label:string; value:string; code:string; angle:'discount' | 'none'; discountPercent?:number };
 type Dashboard = { ok:boolean; mode:string; updatedAt:string; storageMode?:string; metrics:Record<string, number>; funnel:{label:string;value:number}[]; channels:{label:string;orders:number;revenueUsd:number}[]; topProducts:{name:string;orders:number;revenueUsd:number}[]; mcpChecks:{ok:boolean;source:string;tool:string;latencyMs:number}[]; agents:AgentConfig[]; autopilotTimeline?:AutopilotEvent[]; approvalQueue?:ApprovalQueueItem[] };
 type AgentConfig = { id:string; name:string; enabled:boolean; mode:string; tone:string; dailyLimit:number; goal:string };
 type AutopilotEvent = { type:string; label:string; summary:string; status:string };
@@ -14,12 +15,11 @@ type AgentConfigResponse = { ok:boolean; agents:AgentConfig[]; version:number; u
 const API = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8787' : '');
 
 const offers: Offer[] = [
-  { label: '$5 off today', value: 'Apply a $5 online sweetness credit', code: 'SWEET5', angle: 'discount' },
-  { label: 'Free candles', value: 'Add a small candle set to the box', code: 'CANDLES', angle: 'gift' },
-  { label: 'Office treat', value: '10% off a second cake for the same office order', code: 'OFFICE10', angle: 'b2b' },
-  { label: 'Priority request', value: 'Move this order request into the priority review lane', code: 'FASTBOX', angle: 'urgency' },
-  { label: 'Comeback card', value: 'Add a repeat-order reminder card for next celebration', code: 'MEMORY', angle: 'retention' },
-  { label: 'Surprise note', value: 'Add a handwritten gift note to the box', code: 'NOTE', angle: 'gift' }
+  { label: '5% off', value: 'Take 5% off your cake request', code: 'CAKE5', angle: 'discount', discountPercent: 5 },
+  { label: '10% off', value: 'Take 10% off your cake request', code: 'CAKE10', angle: 'discount', discountPercent: 10 },
+  { label: '20% off', value: 'Take 20% off your cake request', code: 'CAKE20', angle: 'discount', discountPercent: 20 },
+  { label: '50% off', value: 'Take 50% off your cake request', code: 'CAKE50', angle: 'discount', discountPercent: 50 },
+  { label: 'Nothing', value: 'No discount this spin — you can still send your cake request', code: 'NO-DISCOUNT', angle: 'none' }
 ];
 
 const shopTrustPoints = [
@@ -60,6 +60,7 @@ export default function App() {
   const [offer, setOffer] = useState<Offer | null>(null);
   const [wheelOpen, setWheelOpen] = useState(false);
   const [spinning, setSpinning] = useState(false);
+  const [wheelRotation, setWheelRotation] = useState(0);
   const [result, setResult] = useState<AssistantResponse | null>(null);
   const [ownerResult, setOwnerResult] = useState('');
   const [loading, setLoading] = useState(false);
@@ -127,28 +128,36 @@ export default function App() {
 
   function spinOffer() {
     if (spinning) return;
+    const nextIndex = Math.floor(Math.random() * offers.length);
+    const next = offers[nextIndex];
+    const slice = 360 / offers.length;
+    const targetCenter = nextIndex * slice + slice / 2;
+    setOffer(null);
     setSpinning(true);
+    setWheelRotation(previous => {
+      const normalized = ((previous % 360) + 360) % 360;
+      return previous + 360 * 5 + (360 - targetCenter) - normalized;
+    });
     window.setTimeout(() => {
-      const next = offers[Math.floor(Math.random() * offers.length)];
       setOffer(next);
       setSpinning(false);
       localStorage.setItem('happycake-offer-seen', '1');
-    }, 1050);
+    }, 1650);
   }
 
   function startOrder(product: Product) {
     setSelected(product);
-    setNote(`I would like ${product.name}${offer ? ` with code ${offer.code}` : ''}.`);
+    setNote(`I would like ${product.name}${offer && offer.angle === 'discount' ? ` with code ${offer.code}` : ''}.`);
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   async function submitOrder() {
     const product = selected || featured;
     if (!product) return;
-    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Pickup: ${pickup}. Headcount: ${headcount}. ${offer ? `Offer code: ${offer.code} — ${offer.value}. ` : ''}${note}`;
+    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Pickup: ${pickup}. Headcount: ${headcount}. ${offer && offer.angle === 'discount' ? `Offer code: ${offer.code} — ${offer.value}. ` : ''}${note}`;
     setLoading(true);
     setOwnerResult('');
-    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: offer?.code }) });
+    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: offer?.angle === 'discount' ? offer.code : undefined }) });
     const data = await res.json();
     setResult(data);
     if (data?.requiredApprovals?.[0]) {
@@ -250,13 +259,21 @@ export default function App() {
       <div className="offerModal">
         <button className="closeOffer" onClick={() => { setWheelOpen(false); localStorage.setItem('happycake-offer-seen', '1'); }} aria-label="Close offer">×</button>
         <p className="eyebrow">Before you choose</p>
-        <h2>Spin for today’s HappyCake treat.</h2>
-        <p className="offerLead">A small reason to order now — discount, gift note, candles, or priority review.</p>
-        <button className={`wheel ${spinning ? 'spinning' : ''}`} onClick={spinOffer} aria-label="Spin offer wheel">
-          {offers.map((o, i) => <span key={o.code} style={{ transform: `rotate(${i * 60}deg)` }}>{o.label}</span>)}
-          <b>{spinning ? 'Spinning…' : offer ? offer.label : 'SPIN'}</b>
-        </button>
-        {offer && <div className="wonOffer"><small>Your code</small><strong>{offer.code}</strong><p>{offer.value}. Bakery confirms final availability and pickup.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop with this offer</button></div>}
+        <h2>Spin for today’s cake discount.</h2>
+        <p className="offerLead">Win 5%, 10%, 20%, 50% off — or land on nothing. One quick spin before you request your cake.</p>
+        <div className="wheelWrap">
+          <div className="wheelPointer" aria-hidden="true" />
+          <button
+            className={`wheel ${spinning ? 'spinning' : ''}`}
+            onClick={spinOffer}
+            aria-label="Spin discount wheel"
+            style={{ '--wheel-rotation': `${wheelRotation}deg` } as CSSProperties}
+          >
+            {offers.map((o, i) => <span key={o.code} style={{ transform: `rotate(${i * (360 / offers.length)}deg)` }}>{o.label}</span>)}
+            <b>{spinning ? 'Spinning…' : offer ? offer.label : 'SPIN'}</b>
+          </button>
+        </div>
+        {offer && <div className={`wonOffer ${offer.angle === 'none' ? 'emptyOffer' : ''}`}><small>{offer.angle === 'none' ? 'Result' : 'Your code'}</small><strong>{offer.angle === 'none' ? 'Nothing' : offer.code}</strong><p>{offer.value}. {offer.angle === 'discount' ? 'Bakery confirms final availability and pickup.' : 'You can spin again later or choose a cake now.'}</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
       </div>
     </div>}
 
@@ -278,7 +295,7 @@ export default function App() {
           <h1>Choose a cake. Spin your treat. Send the request.</h1>
           <p className="lead">Classic HappyCake flavors with clear prices, soft order perks, and a simple request flow. Pick your cake now — the bakery confirms pickup and final details before fulfillment.</p>
           <div className="heroActions"><a className="primary" href="#catalog">Shop cakes</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin the treat wheel</button></div>
-          {offer && <div className="offerRibbon"><span>{offer.code}</span>{offer.value}</div>}
+          {offer && <div className="offerRibbon"><span>{offer.angle === 'discount' ? offer.code : 'TRY AGAIN'}</span>{offer.value}</div>}
         </div>
         <div className="heroShowcase">
           <img className="showcaseMain" src="/assets/hero/happy-cake-hero-02.webp" alt="HappyCake cakes" />
@@ -291,7 +308,7 @@ export default function App() {
       </section>
 
       <section className="promoRail">
-        <button onClick={() => setWheelOpen(true)}><b>Spin the wheel</b><span>Discount, candles, note, or priority request.</span></button>
+        <button onClick={() => setWheelOpen(true)}><b>Spin the wheel</b><span>5%, 10%, 20%, 50%, or nothing.</span></button>
         <button onClick={() => featured && startOrder(featured)}><b>Featured cake</b><span>{featured ? `${featured.name} · $${featured.priceUsd}` : 'Pick a classic cake'}</span></button>
         <button onClick={() => document.getElementById('birthday')?.scrollIntoView({ behavior: 'smooth' })}><b>Birthday discount</b><span>Leave your date and phone for a reminder.</span></button>
       </section>
@@ -309,7 +326,7 @@ export default function App() {
           <p className="eyebrow">Order request</p>
           <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
           {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>${selected.priceUsd}</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
-          {offer && <div className="offerApplied"><b>{offer.code}</b><span>{offer.value}</span></div>}
+          {offer && <div className="offerApplied"><b>{offer.angle === 'discount' ? offer.code : 'No discount'}</b><span>{offer.value}</span></div>}
         </div>
         <div className="orderForm">
           <label>Your name <input value={name} onChange={e=>setName(e.target.value)} placeholder="Optional" /></label>
