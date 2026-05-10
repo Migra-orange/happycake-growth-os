@@ -459,11 +459,11 @@ export default function App() {
         </article>)}</div>
       </section>
 
-      {selected && <section className="orderStage" id="order">
+      <section className="orderStage" id="order">
         <div className="orderSummary">
           <p className="eyebrow">Order request</p>
           <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
-          {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>Bakery confirms current price</b><span>{selected.weight} · {selected.serves}</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
+          {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>Bakery confirms current price</b><span>{selected.weight} · {selected.serves}</span></div></> : featured ? <><img src={featured.image} alt={featured.name}/><div className="priceLine"><b>Choose a cake above</b><span>We’ll prepare your pickup request here.</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
           {promoClaim && <div className="offerApplied"><b>{promoClaim.promoCode}</b><span>{promoClaim.discountPercent}% off saved for bakery-confirmed checkout</span></div>}
         </div>
         <div className="orderForm">
@@ -473,10 +473,10 @@ export default function App() {
           <label>Pickup window <input value={pickup} onChange={e=>setPickup(e.target.value)} /></label>
           <label>Guests <input value={headcount} onChange={e=>setHeadcount(e.target.value)} /></label>
           <label>Note <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add text on box, occasion, or question." /></label>
-          <button className="primary wide" onClick={submitOrder} disabled={loading || !selected}>{loading ? 'Sending order request…' : 'Send order request'}</button>
+          <button className="primary wide" onClick={submitOrder} disabled={loading || (!selected && !featured)}>{loading ? 'Sending order request…' : 'Send order request'}</button>
           <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the bakery before fulfillment.</p>
         </div>
-      </section>}
+      </section>
 
       <section className="landingSection occasionSection">
         <div className="sectionHeader"><div><p className="eyebrow">Occasions</p><h2>Pick by moment, not just flavor.</h2></div><p>Fast paths for birthdays, gifts, and office tables — choose the cake first, then send pickup details.</p></div>

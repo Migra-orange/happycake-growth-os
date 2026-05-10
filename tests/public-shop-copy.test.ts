@@ -42,7 +42,7 @@ describe('public shop copy', () => {
     expect(shop).not.toContain('className="promoRail"');
     expect(shop).not.toContain('className="birthdayClub"');
     expect(shop).not.toContain('className="marketingSection"');
-    expect(shop).toContain('{selected && <section className="orderStage"');
+    expect(shop).toContain('<section className="orderStage"');
   });
 
   it('includes premium cake storefront basics without opening the discount wheel automatically', () => {
@@ -104,7 +104,7 @@ describe('public shop copy', () => {
   it('places the selected-cake order form immediately after the catalog CTA target', () => {
     const shop = shopMarkup();
     const catalog = shop.indexOf('className="catalogSection catalogAfterHero"');
-    const orderStage = shop.indexOf('{selected && <section className="orderStage"', catalog);
+    const orderStage = shop.indexOf('<section className="orderStage"', catalog);
     const occasions = shop.indexOf('className="landingSection occasionSection"', catalog);
 
     expect(catalog).toBeGreaterThan(-1);
