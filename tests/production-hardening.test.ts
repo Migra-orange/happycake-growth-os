@@ -124,8 +124,11 @@ describe('production hardening gates', () => {
 
     expect(ownerAction).toContain("call.source !== 'mcp'");
     expect(ownerAction).toContain('side_effect_not_live_mcp');
+    expect(ownerAction).toContain('hasMcpResultError(call.data)');
+    expect(ownerAction).toContain('inputForSideEffect(tool, record)');
     const sideEffectRunner = ownerAction.slice(ownerAction.indexOf('const runMissingApprovedSideEffects'));
     expect(sideEffectRunner.indexOf("call.source !== 'mcp'")).toBeLessThan(sideEffectRunner.indexOf('record.executedSideEffects = Array.from'));
+    expect(sideEffectRunner.indexOf('hasMcpResultError(call.data)')).toBeLessThan(sideEffectRunner.indexOf('record.executedSideEffects = Array.from'));
   });
 
   it('keeps local Express owner actions fail-closed when the owner token is missing', () => {

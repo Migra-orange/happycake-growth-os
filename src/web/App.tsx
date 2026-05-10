@@ -250,6 +250,12 @@ export default function App() {
     window.setTimeout(() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
   }
 
+  function scrollToCatalog(event?: React.MouseEvent<HTMLAnchorElement>) {
+    event?.preventDefault();
+    history.replaceState(null, '', '#catalog');
+    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   async function submitOrder() {
     const product = selected;
     if (!product) return;
@@ -452,7 +458,7 @@ export default function App() {
           <p className="eyebrow">Sugar Land cake shop</p>
           <h1>Celebration cakes without the back-and-forth.</h1>
           <p className="lead">Choose a real HappyCake menu item, review the size and serving guide, then send one clean pickup request for the bakery to confirm current price and availability.</p>
-          <div className="heroActions"><a className="primary" href="#catalog">Shop the menu</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin for a discount</button></div>
+          <div className="heroActions"><a className="primary" href="#catalog" onClick={scrollToCatalog}>Shop the menu</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin for a discount</button></div>
           <div className="heroHighlights">{landingHighlights.map(item => <span key={item}>{item}</span>)}</div>
           {promoClaim && <div className="offerRibbon"><span>{promoClaim.promoCode}</span>{promoClaim.discountPercent}% off saved for checkout</div>}
         </div>

@@ -33,11 +33,14 @@ describe('public shop copy', () => {
   });
 
   it('moves shoppers from hero straight into the cake menu and avoids extra form sections', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
     const shop = shopMarkup();
     const heroEnd = shop.indexOf('</section>');
     const afterHero = shop.slice(heroEnd + '</section>'.length).trimStart();
 
     expect(afterHero.startsWith('<section className="catalogSection catalogAfterHero"')).toBe(true);
+    expect(shop).toContain('href="#catalog" onClick={scrollToCatalog}>Shop the menu</a>');
+    expect(source).toContain("document.getElementById('catalog')?.scrollIntoView");
     expect(shop).not.toContain('className="funnelMap"');
     expect(shop).not.toContain('className="promoRail"');
     expect(shop).not.toContain('className="birthdayClub"');

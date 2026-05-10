@@ -82,6 +82,20 @@ function hasJsonRpcError(data: Record<string, unknown>) {
   return Boolean(data && typeof data === 'object' && 'error' in data);
 }
 
+function hasMcpResultError(data?: Record<string, unknown>) {
+  if (!data) return false;
+  const result = data.result as { isError?: boolean } | undefined;
+  return hasJsonRpcError(data) || Boolean(result?.isError);
+}
+
+function inputForSideEffect(tool: string, record: StoredApprovalRecord) {
+  const item = { name: 'HappyCake approved cake request', quantity: 1, note: record.summary };
+  const base = { intentId: record.intentId, approvalId: record.approvalId, approvedBy: 'owner_telegram', idempotencyKey: `${record.approvalId}:${tool}` };
+  if (tool === 'square_create_order') return { ...base, customerName: record.customer, source: 'owner_approval', items: [item] };
+  if (tool === 'kitchen_create_ticket') return { ...base, orderId: record.intentId, customerName: record.customer, items: [item] };
+  return base;
+}
+
 async function callMcp(tool: string, input: Record<string, unknown>) {
   const started = Date.now();
   const teamToken = token();
@@ -123,9 +137,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const runMissingApprovedSideEffects = async (record: StoredApprovalRecord, tools: string[]) => {
       const mcpCalls = [] as Awaited<ReturnType<typeof callMcp>>[];
       for (const tool of tools) {
-        const call = await callMcp(tool, { intentId: record.intentId, approvalId: record.approvalId, approvedBy: 'owner_telegram', idempotencyKey: `${record.approvalId}:${tool}` });
+        const call = await callMcp(tool, inputForSideEffect(tool, record));
         mcpCalls.push(call);
-        if (!call.ok || call.source !== 'mcp') {
+        if (!call.ok || call.source !== 'mcp' || hasMcpResultError(call.data)) {
           throw new Error(`side_effect_not_live_mcp:${tool}`);
         }
         record.executedSideEffects = Array.from(new Set([...(record.executedSideEffects || []), call.tool]));
@@ -155,7 +169,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const mcpCalls = rejected
       ? [await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'rejected', note: req.body?.note || '', idempotencyKey: `${approval.approvalId}:marketing_report_to_owner` })]
       : await runMissingApprovedSideEffects(decidedApproval, expectedSideEffects);
-    if (rejected && mcpCalls.some(call => !call.ok || call.source !== 'mcp')) {
+    if (rejected && mcpCalls.some(call => !call.ok || call.source !== 'mcp' || hasMcpResultError(call.data))) {
       throw new Error('side_effect_not_live_mcp:marketing_report_to_owner');
     }
 
