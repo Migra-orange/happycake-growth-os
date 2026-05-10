@@ -37,6 +37,27 @@ async function answerCallbackQuery(callbackQueryId: string, text: string) {
   return { ok: response.ok };
 }
 
+async function ensureTelegramWebhook(req: VercelRequest) {
+  const url = telegramApi('setWebhook');
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!url || !secret) return { ok: false, skipped: true, reason: 'telegram_not_configured' };
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'happycake-growth-os.vercel.app';
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const webhookUrl = `${proto}://${host}/api/telegram/webhook`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url: webhookUrl,
+      secret_token: secret,
+      allowed_updates: ['callback_query'],
+      drop_pending_updates: false
+    })
+  });
+  const body = await response.json().catch(() => ({}));
+  return { ok: response.ok && body?.ok !== false, skipped: false, webhookUrl };
+}
+
 function ownerAllowed(callback: TelegramCallback) {
   const allowed = [
     process.env.TELEGRAM_OWNER_USER_ID,
@@ -64,7 +85,8 @@ async function forwardOwnerAction(req: VercelRequest, action: string, approvalId
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'GET') {
-    return res.status(200).json({ ok: true, route: 'telegram_webhook', configured: Boolean(process.env.TELEGRAM_BOT_TOKEN), ownerAllowlistConfigured: Boolean(process.env.TELEGRAM_OWNER_USER_ID || process.env.TELEGRAM_OWNER_CHAT_ID || process.env.TELEGRAM_ALLOWED_USERS), secretConfigured: Boolean(process.env.TELEGRAM_WEBHOOK_SECRET) });
+    const repair = await ensureTelegramWebhook(req).catch(() => ({ ok: false, skipped: false, reason: 'telegram_setwebhook_failed' }));
+    return res.status(200).json({ ok: true, route: 'telegram_webhook', configured: Boolean(process.env.TELEGRAM_BOT_TOKEN), ownerAllowlistConfigured: Boolean(process.env.TELEGRAM_OWNER_USER_ID || process.env.TELEGRAM_OWNER_CHAT_ID || process.env.TELEGRAM_ALLOWED_USERS), secretConfigured: Boolean(process.env.TELEGRAM_WEBHOOK_SECRET), webhookRepairOk: repair.ok, webhookUrl: 'https://happycake-growth-os.vercel.app/api/telegram/webhook' });
   }
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   if (!checkRateLimit(req)) return res.status(429).json({ ok: false, error: 'rate_limited' });

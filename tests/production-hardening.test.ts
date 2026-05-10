@@ -12,6 +12,10 @@ describe('production hardening gates', () => {
 
     expect(webhook).toContain('callback_query');
     expect(webhook).toContain('answerCallbackQuery');
+    expect(webhook).toContain('ensureTelegramWebhook');
+    expect(webhook).toContain('secret_token: secret');
+    expect(webhook).toContain("allowed_updates: ['callback_query']");
+    expect(webhook).toContain('webhookRepairOk');
     expect(webhook).toContain('hc:approve:');
     expect(webhook).toContain('hc:reject:');
     expect(webhook).toContain('TELEGRAM_WEBHOOK_SECRET');
