@@ -94,7 +94,7 @@ function decryptStore(payload: any): BirthdayStore | null {
 async function readStore(): Promise<BirthdayStore> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return memoryStore;
   try {
-    const blob = await get(BLOB_PATH, { access: 'public', useCache: false });
+    const blob = await get(BLOB_PATH, { access: 'private', useCache: false });
     if (!blob || blob.statusCode !== 200 || !blob.stream) return memoryStore;
     const parsed = decryptStore(await new Response(blob.stream).json());
     if (!parsed) return memoryStore;
@@ -108,7 +108,7 @@ async function writeStore(store: BirthdayStore) {
   memoryStore = store;
   if (!process.env.BLOB_READ_WRITE_TOKEN) return 'server_memory';
   await put(BLOB_PATH, JSON.stringify(encryptStore(store), null, 2), {
-    access: 'public',
+    access: 'private',
     contentType: 'application/json',
     allowOverwrite: true
   });
