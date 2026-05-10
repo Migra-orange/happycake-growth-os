@@ -347,3 +347,62 @@ main { min-height: 100vh; overflow: hidden; }
 }
 @media (max-width: 1040px) { .funnelMap, .ownerWorkMap { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) { .funnelMap, .ownerWorkMap { width: min(100% - 24px, 1240px); grid-template-columns: 1fr; } }
+/* Birthday reminder capture */
+.birthdayClub {
+  width: min(1240px, calc(100% - 36px));
+  margin: clamp(58px, 9vw, 112px) auto 0;
+  display: grid;
+  grid-template-columns: .95fr 1.05fr;
+  gap: 24px;
+  align-items: stretch;
+  padding: clamp(24px, 4vw, 44px);
+  border-radius: 46px;
+  background: radial-gradient(circle at 10% 0, rgba(255,225,106,.52), transparent 18rem), linear-gradient(135deg, rgba(255,253,247,.92), rgba(255,244,226,.92));
+  border: 1px solid rgba(107,58,30,.14);
+  box-shadow: var(--shadow);
+}
+.birthdayClub h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--brown);
+  font-size: clamp(2.8rem, 5.8vw, 6rem);
+  line-height: .86;
+  letter-spacing: -.06em;
+}
+.birthdayClub p {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.5;
+}
+.birthdayForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: clamp(18px, 3vw, 30px);
+  border-radius: 32px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(107,58,30,.13);
+}
+.birthdayForm label {
+  display: grid;
+  gap: 8px;
+  color: var(--brown);
+  font-size: 13px;
+  font-weight: 950;
+}
+.birthdayForm input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+  padding: 14px 15px;
+  outline: none;
+}
+.birthdayForm input:focus { border-color: var(--sky); box-shadow: 0 0 0 4px rgba(0,174,234,.12); }
+.consentLine, .birthdayForm .wide, .birthdayStatus { grid-column: 1 / -1; }
+.consentLine { grid-template-columns: 20px 1fr !important; align-items: center; color: var(--muted) !important; line-height: 1.35; }
+.consentLine input { width: 18px; height: 18px; }
+.birthdayStatus { margin: 0; border-radius: 18px; padding: 13px 14px; background: rgba(139,215,181,.20); color: var(--brown) !important; font-weight: 850; }
+@media (max-width: 900px) { .birthdayClub { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .birthdayClub { width: min(100% - 24px, 1240px); } .birthdayForm { grid-template-columns: 1fr; } }

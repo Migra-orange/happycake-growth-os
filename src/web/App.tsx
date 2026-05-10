@@ -69,6 +69,12 @@ export default function App() {
   const [configSaved, setConfigSaved] = useState(false);
   const [configStatus, setConfigStatus] = useState('loading server config');
   const [ownerToken, setOwnerToken] = useState('');
+  const [birthdayName, setBirthdayName] = useState('');
+  const [birthdayPhone, setBirthdayPhone] = useState('');
+  const [birthdayDate, setBirthdayDate] = useState('');
+  const [birthdayConsent, setBirthdayConsent] = useState(true);
+  const [birthdayStatus, setBirthdayStatus] = useState('');
+  const [birthdayLoading, setBirthdayLoading] = useState(false);
 
   useEffect(() => {
     fetch('/data/products.json').then(r => r.json()).then(d => setProducts(d.products));
@@ -189,6 +195,27 @@ export default function App() {
     }
   }
 
+  async function submitBirthdayReminder() {
+    setBirthdayLoading(true);
+    setBirthdayStatus('');
+    try {
+      const res = await fetch(`${API}/api/birthday-reminder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: birthdayName || name, phone: birthdayPhone, birthday: birthdayDate, consent: birthdayConsent, source: 'homepage-birthday-card' })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error || 'birthday_save_failed');
+      setBirthdayStatus(`Saved — we’ll text your birthday cake reminder with ${data.lead.discountCode}.`);
+      setBirthdayPhone('');
+      setBirthdayDate('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'birthday_save_failed';
+      setBirthdayStatus(message === 'sms_consent_required' ? 'Please allow birthday reminder texts first.' : 'Add a valid phone number and birthday date.');
+    }
+    setBirthdayLoading(false);
+  }
+
   function updateAgent(id: string, patch: Partial<AgentConfig>) {
     setConfigSaved(false);
     setAgentDrafts(list => list.map(a => a.id === id ? { ...a, ...patch } : a));
@@ -266,7 +293,7 @@ export default function App() {
       <section className="promoRail">
         <button onClick={() => setWheelOpen(true)}><b>Spin the wheel</b><span>Discount, candles, note, or priority request.</span></button>
         <button onClick={() => featured && startOrder(featured)}><b>Featured cake</b><span>{featured ? `${featured.name} · $${featured.priceUsd}` : 'Pick a classic cake'}</span></button>
-        <button onClick={() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })}><b>Fast request</b><span>Send pickup window, guests, and occasion.</span></button>
+        <button onClick={() => document.getElementById('birthday')?.scrollIntoView({ behavior: 'smooth' })}><b>Birthday discount</b><span>Leave your date and phone for a reminder.</span></button>
       </section>
 
       <section className="catalogSection" id="catalog">
@@ -299,6 +326,22 @@ export default function App() {
         <div className="replyDraft"><span className="softBadge">Order request sent</span><h2>Customer reply</h2><p>{result.reply}</p></div>
         <div className="realityBox"><div className="sectionHeader"><h2>What happens next</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide' : 'Show'}</button></div><div className="checkGrid"><span>Menu</span><span>Price</span><span>Pickup</span><span>Confirm</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{a.detail.replace(/simulated · /g, '').replace(/^MCP: /, '').replace(/owner/gi, 'bakery').replace(/POS/gi, 'order system').replace(/MCP/gi, 'system')}</small></span></li>)}</ol>}</div>
       </section>}
+
+      <section className="birthdayClub" id="birthday">
+        <div>
+          <p className="eyebrow">Birthday cake reminder</p>
+          <h2>Get a birthday cake discount before your day.</h2>
+          <p>Leave your phone and birthday. HappyCake will send one reminder near your birthday with a cake discount, so you do not have to remember at the last minute.</p>
+        </div>
+        <div className="birthdayForm">
+          <label>Name <input value={birthdayName} onChange={e => setBirthdayName(e.target.value)} placeholder="Optional" /></label>
+          <label>Phone <input value={birthdayPhone} onChange={e => setBirthdayPhone(e.target.value)} placeholder="(832) 555-0101" inputMode="tel" /></label>
+          <label>Birthday <input value={birthdayDate} onChange={e => setBirthdayDate(e.target.value)} type="date" /></label>
+          <label className="consentLine"><input type="checkbox" checked={birthdayConsent} onChange={e => setBirthdayConsent(e.target.checked)} /> Text me a birthday cake reminder and discount.</label>
+          <button className="primary wide" onClick={submitBirthdayReminder} disabled={birthdayLoading || !birthdayPhone || !birthdayDate}>{birthdayLoading ? 'Saving reminder…' : 'Save my birthday reminder'}</button>
+          {birthdayStatus && <p className="birthdayStatus">{birthdayStatus}</p>}
+        </div>
+      </section>
 
       <section className="marketingSection">
         <div><p className="eyebrow">Why order here</p><h2>Simple cake buying, not back-and-forth guessing.</h2></div>
