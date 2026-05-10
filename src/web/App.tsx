@@ -37,7 +37,7 @@ const ownerWorkstreams = [
 
 const actionLabels: Record<string, string> = {
   lead_received: 'Order started',
-  mcp_tool_called: 'Sandbox checked',
+  mcp_tool_called: 'Menu checked',
   source_checked: 'Catalog and kitchen checked',
   order_intent_created: 'Order intent created',
   owner_approval_requested: 'Bakery review queued',
@@ -46,6 +46,16 @@ const actionLabels: Record<string, string> = {
   kitchen_ticket_created: 'Cake prep queued',
   customer_reply_sent: 'Reply prepared'
 };
+
+function cleanShopperText(text = '') {
+  return text
+    .replace(/sandbox catalog/gi, 'cake menu')
+    .replace(/sandbox/gi, 'menu')
+    .replace(/POS summary/gi, 'order summary')
+    .replace(/POS/gi, 'order system')
+    .replace(/owner/gi, 'bakery')
+    .replace(/MCP/gi, 'system');
+}
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -380,8 +390,8 @@ export default function App() {
       </section>
 
       {result && <section className="replyPanel premiumResult">
-        <div className="replyDraft"><span className="softBadge">Order request sent</span><h2>Customer reply</h2><p>{result.reply}</p></div>
-        <div className="realityBox"><div className="sectionHeader"><h2>What happens next</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide' : 'Show'}</button></div><div className="checkGrid"><span>Menu</span><span>Price</span><span>Pickup</span><span>Confirm</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{a.detail.replace(/simulated · /g, '').replace(/^MCP: /, '').replace(/owner/gi, 'bakery').replace(/POS/gi, 'order system').replace(/MCP/gi, 'system')}</small></span></li>)}</ol>}</div>
+        <div className="replyDraft"><span className="softBadge">Order request sent</span><h2>Customer reply</h2><p>{cleanShopperText(result.reply)}</p></div>
+        <div className="realityBox"><div className="sectionHeader"><h2>What happens next</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide' : 'Show'}</button></div><div className="checkGrid"><span>Menu</span><span>Price</span><span>Pickup</span><span>Confirm</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{cleanShopperText(a.detail)}</small></span></li>)}</ol>}</div>
       </section>}
 
       <section className="birthdayClub" id="birthday">
