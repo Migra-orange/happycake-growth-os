@@ -12,6 +12,10 @@
         "ok": true,
         "service": "happycake-growth-os",
         "runtime": "claude-code-cli",
+        "localRuntime": "claude-code-cli",
+        "productionRuntime": "vercel_serverless_mcp_demo",
+        "claudeCliProductionExecuted": false,
+        "localProofPath": "src/server/assistant.ts",
         "deployment": "vercel"
       }
     },

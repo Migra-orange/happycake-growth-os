@@ -90,8 +90,8 @@ function hasOwnerToken(req: VercelRequest) {
 }
 
 function publicQueueLabel(index: number, status: StoredApprovalStatus) {
-  if (status === 'scheduled') return `Scheduled follow-up ${index + 1}`;
-  return `Pending approval ${index + 1}`;
+  if (status === 'scheduled') return `Public scheduled follow-up queue item ${index + 1}`;
+  return `Public pending approval queue item ${index + 1}`;
 }
 
 async function queueForDashboard(authenticated = false) {

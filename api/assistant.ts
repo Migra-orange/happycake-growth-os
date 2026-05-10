@@ -41,7 +41,6 @@ async function saveApprovalStore(store: ApprovalStore) {
     return true;
   } catch { return false; }
 }
-
 async function sendTelegramOwnerCard(record: StoredApprovalRecord) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_OWNER_CHAT_ID;
@@ -209,7 +208,8 @@ async function runFlow(body: any) {
     createdAt,
     expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString()
   }) : undefined;
-  if (approvalStore) await saveApprovalStore(approvalStore);
+  const approvalSaved = approvalStore ? await saveApprovalStore(approvalStore) : false;
+  if (approvalStore && process.env.BLOB_READ_WRITE_TOKEN && !approvalSaved) throw new Error('approval_persistence_failed');
   const ownerDelivery = approvalRecord ? await sendTelegramOwnerCard(approvalRecord).catch(() => ({ ok: false, skipped: true, reason: 'telegram_send_failed' })) : { ok: false, skipped: true, reason: 'approval_not_required' };
 
   const sourceSummary = mcpChecks.every((c) => c.source === 'mcp') ? 'real Steppe MCP' : 'safe simulator fallback';
@@ -261,7 +261,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!req.body || typeof req.body.message !== 'string') return res.status(400).json({ error: 'invalid_request' });
   try {
     return res.status(200).json(await runFlow(req.body));
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'approval_persistence_failed') {
+      return res.status(502).json({ error: 'approval_persistence_failed' });
+    }
     return res.status(502).json({ error: 'mcp_live_call_failed' });
   }
 }

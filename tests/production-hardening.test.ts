@@ -131,7 +131,9 @@ describe('production hardening gates', () => {
     const app = read('src/web/App.tsx');
 
     expect(dashboard).toContain('function hasOwnerToken');
-    expect(dashboard).toContain('publicQueueLabel');
+    expect(dashboard).toContain('function publicQueueLabel');
+    expect(dashboard).toContain('Public scheduled follow-up queue item ${index + 1}');
+    expect(dashboard).toContain('Public pending approval queue item ${index + 1}');
     expect(dashboard).toContain('customer details are private');
     expect(dashboard).toContain('approvalId: authenticated ? item.approvalId');
     expect(dashboard).toContain('intentId: authenticated ? item.intentId');
@@ -139,5 +141,26 @@ describe('production hardening gates', () => {
     expect(dashboard).toContain('executedSideEffects: authenticated ? item.executedSideEffects : []');
     expect(dashboard).toContain('const ownerAuthenticated = hasOwnerToken(req)');
     expect(app).toContain('fetch(`${API}/api/owner/dashboard`, { headers: ownerHeaders(tokenOverride) })');
+  });
+
+  it('uses non-customer public queue labels that distinguish pending approvals from follow-up work', () => {
+    const dashboard = read('api/owner/dashboard.ts');
+
+    expect(dashboard).toContain('Public scheduled follow-up queue item');
+    expect(dashboard).toContain('Public pending approval queue item');
+    expect(dashboard).not.toContain('return `Scheduled follow-up ${index + 1}`');
+    expect(dashboard).not.toContain('return `Pending approval ${index + 1}`');
+  });
+
+  it('fails closed when a required owner approval cannot be persisted to durable Blob storage', () => {
+    const assistant = read('api/assistant.ts');
+
+    expect(assistant).toContain('const approvalSaved = approvalStore ? await saveApprovalStore(approvalStore) : false');
+    expect(assistant).toContain("if (approvalStore && process.env.BLOB_READ_WRITE_TOKEN && !approvalSaved) throw new Error('approval_persistence_failed')");
+    expect(assistant).toContain("if (error instanceof Error && error.message === 'approval_persistence_failed')");
+    expect(assistant).toContain("return res.status(502).json({ error: 'approval_persistence_failed' })");
+    const persistenceGuard = "if (approvalStore && process.env.BLOB_READ_WRITE_TOKEN && !approvalSaved) throw new Error('approval_persistence_failed')";
+    const ownerDeliveryCall = 'const ownerDelivery = approvalRecord ? await sendTelegramOwnerCard(approvalRecord)';
+    expect(assistant.indexOf(persistenceGuard)).toBeLessThan(assistant.indexOf(ownerDeliveryCall));
   });
 });
