@@ -48,21 +48,21 @@
         "rating": 4.7,
         "text": "Happy Cake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.",
         "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX",
-        "source": "Google Maps limited view"
+        "source": "Open on Google Maps"
       },
       {
         "label": "Local public review",
         "rating": 5,
         "text": "“Phenomenal cakes and service. Highly recommended.”",
         "url": "https://local.yahoo.com/info-238808884-happy-cake-sugar-land",
-        "source": "Yahoo Local snippet"
+        "source": "Read more"
       },
       {
         "label": "Houston food creator note",
         "rating": 5,
         "text": "“Cake slices start at $8+. Highly recommend: Honey Cake Slice.”",
         "url": "https://www.tiktok.com/discover/happy-cake-sugar-land",
-        "source": "TikTok public snippet"
+        "source": "See creator note"
       }
     ]
   },

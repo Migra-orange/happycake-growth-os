@@ -37,7 +37,7 @@ const occasionTiles = [
 const landingHighlights = [
   'Shop by real cake menu',
   'Bakery confirmation before pickup',
-  'Instagram, map, and cake helper ready'
+  'Instagram, map, and cake guidance ready'
 ];
 
 const fallbackBusinessProfile: BusinessProfile = {
@@ -50,9 +50,9 @@ const fallbackBusinessProfile: BusinessProfile = {
   ] },
   googleMaps: { label: 'Happy Cake on Google Maps', searchUrl: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', status: 'google_maps_limited_view_verified', address: '350 Promenade Wy #500, Sugar Land, TX 77478', phone: '(281) 979-8320', website: 'happycake.us', plusCode: 'J952+JW Sugar Land, Texas', ownerPost: 'Every celebration deserves a cake made just for them.' },
   reviews: { source: 'Google Maps + public web snippets checked May 2026', status: 'google_rating_visible_review_text_limited_public_snippets_used', summary: 'Google Maps currently exposes the 4.7 rating in limited view; public review snippets add specific customer language below.', rating: 4.7, countLabel: 'Google rating · public snippets', items: [
-    { label: 'Google Maps rating', rating: 4.7, text: 'Happy Cake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', source: 'Google Maps limited view' },
-    { label: 'Local public review', rating: 5, text: '“Phenomenal cakes and service. Highly recommended.”', url: 'https://local.yahoo.com/info-238808884-happy-cake-sugar-land', source: 'Yahoo Local snippet' },
-    { label: 'Houston food creator note', rating: 5, text: '“Cake slices start at $8+. Highly recommend: Honey Cake Slice.”', url: 'https://www.tiktok.com/discover/happy-cake-sugar-land', source: 'TikTok public snippet' }
+    { label: 'Google Maps rating', rating: 4.7, text: 'Happy Cake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', source: 'Open on Google Maps' },
+    { label: 'Local public review', rating: 5, text: '“Phenomenal cakes and service. Highly recommended.”', url: 'https://local.yahoo.com/info-238808884-happy-cake-sugar-land', source: 'Read more' },
+    { label: 'Houston food creator note', rating: 5, text: '“Cake slices start at $8+. Highly recommend: Honey Cake Slice.”', url: 'https://www.tiktok.com/discover/happy-cake-sugar-land', source: 'See creator note' }
   ] },
   agentReadable: { llmsTxt: '/llms.txt', manifest: '/agent-manifest.json', catalog: '/data/products.json', assistant: '/api/assistant' }
 };
@@ -405,7 +405,7 @@ export default function App() {
         <a className="ghost socialLink" href={businessProfile.instagram.url} target="_blank" rel="noreferrer">Instagram</a>
         <a className="ghost socialLink" href={businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer">Map</a>
         <button className={view === 'shop' ? 'active' : 'ghost'} onClick={() => { setView('shop'); history.replaceState(null, '', '/'); }}>Shop cakes</button>
-        <button className={view === 'owner' ? 'active' : 'ghost'} onClick={() => { setView('owner'); history.replaceState(null, '', '#owner'); }}>Owner</button>
+        {view === 'owner' && <button className="active" onClick={() => { setView('owner'); history.replaceState(null, '', '#owner'); }}>Owner</button>}
       </div>
     </nav>
 
@@ -453,7 +453,7 @@ export default function App() {
           <div className="reviewOrbit">{businessProfile.reviews.items.slice(0, 3).map(item => <a href={item.url || businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer" key={item.label}><b>{item.label}</b><p>{item.text}</p><small>{item.source || 'Open review'}</small></a>)}</div>
         </div>
         <div className="connectCard chatCard visualCard">
-          <div className="sectionHeader compact"><div><p className="eyebrow">Onsite helper</p><h2>Ask HappyCake AI.</h2></div></div>
+          <div className="sectionHeader compact"><div><p className="eyebrow">Cake guidance</p><h2>Ask about cakes.</h2></div></div>
           <div className="miniChat phoneMock">
             <div className="chatMessages">{chatMessages.map((message, i) => <p className={message.role} key={`${message.role}-${i}`}><span>{message.text}</span></p>)}</div>
             <div className="chatInput"><input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') submitChatMessage(); }} placeholder="Ask which cake fits 12 people…" /><button onClick={submitChatMessage} disabled={chatLoading || !chatInput.trim()}>{chatLoading ? 'Asking…' : 'Send'}</button></div>

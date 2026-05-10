@@ -141,7 +141,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const decidedApproval = rejected
       ? rejectRecord(store, approval.approvalId, String(req.body?.note || ''), 'telegram')
       : approveRecord(store, approval.approvalId, mcpCalls.map((call) => call.tool), 'telegram');
-    await saveApprovalStore(store);
+    const saved = await saveApprovalStore(store);
+    if (!saved) return res.status(502).json({ ok: false, error: 'approval_persistence_failed' });
 
     return res.status(200).json({
       ok: true,

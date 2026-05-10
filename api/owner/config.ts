@@ -25,7 +25,7 @@ const storageKey = 'happycake:owner:agent-config:v1';
 const blobPath = 'happycake/owner-agent-config.json';
 
 function hasOwnerToken(req: VercelRequest) {
-  return !process.env.OWNER_API_TOKEN || req.headers['x-owner-token'] === process.env.OWNER_API_TOKEN;
+  return Boolean(process.env.OWNER_API_TOKEN) && req.headers['x-owner-token'] === process.env.OWNER_API_TOKEN;
 }
 
 function redisEnv() {

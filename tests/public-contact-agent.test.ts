@@ -26,11 +26,15 @@ describe('public contact, reviews, and shopper helper surfaces', () => {
     expect(source).not.toContain('instagram.com/embed.js');
     expect(shop).not.toContain('Instagram + location');
     expect(shop).not.toContain('mapVisual');
-    expect(shop).toContain('Ask HappyCake AI');
+    expect(shop).toContain('Ask about cakes');
+    expect(shop).not.toContain('Ask HappyCake AI');
     expect(shop).not.toContain('Open chat');
     expect(shop).toContain('Google ratings');
     expect(shop).toContain('4.7');
     expect(shop).toContain('Open review');
+    expect(shop).not.toContain('Google Maps limited view');
+    expect(shop).not.toContain('Yahoo Local snippet');
+    expect(shop).not.toContain('TikTok public snippet');
     expect(shop).toContain('tel:+12819798320');
   });
 

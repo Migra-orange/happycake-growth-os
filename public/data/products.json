@@ -3,8 +3,8 @@
   "locality": "Sugar Land, Texas",
   "updatedAt": "2026-05-09",
   "guardrails": [
-    "Prices and product names come from HappyCake brand/POS sandbox context.",
-    "Pickup time, inventory, allergens, delivery, and special requests still require source-of-truth or owner confirmation.",
+    "Prices and product names come from HappyCake's published cake menu.",
+    "Pickup time, inventory, allergens, delivery, and special requests still require bakery confirmation.",
     "Ready-made classic cakes first; decoration is small and optional, not custom cake production."
   ],
   "products": [

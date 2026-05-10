@@ -159,12 +159,25 @@ function productFrom(message: string) {
   return lower.includes('napoleon') ? 'cake "Napoleon"' : lower.includes('pistachio') ? 'cake "Pistachio Roll"' : lower.includes('milk') ? 'cake "Milk Maiden"' : lower.includes('honey') ? 'cake "Honey"' : undefined;
 }
 
+function sanitizeCustomerText(value: string) {
+  return value
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email redacted]')
+    .replace(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}/g, '[phone redacted]')
+    .slice(0, 280);
+}
+
+function isExplicitOrderRequest(message: string, productPreference?: string) {
+  return Boolean(productPreference) && /\b(order|request|pickup|today|tonight|after work|birthday|office|guests?|headcount|need|want)\b/i.test(message);
+}
+
 async function runFlow(body: any) {
   const message = String(body?.message || '');
+  const safeMessage = sanitizeCustomerText(message);
   const lower = message.toLowerCase();
   const channel = String(body?.channel || 'website');
   const name = body?.customerName ? String(body.customerName) : undefined;
   const productPreference = productFrom(message);
+  const requiresApproval = body?.requireOwnerApproval !== false && isExplicitOrderRequest(message, productPreference);
   const isB2B = /office|school|church|team|company|staff|birthday/.test(lower);
   const isUrgent = /today|tonight|after work|now|forgot|last minute/.test(lower);
   const evidenceId = `vercel-run-${Date.now().toString(36)}`;
@@ -172,7 +185,7 @@ async function runFlow(body: any) {
   const approvalId = `own_${Date.now().toString(36)}`;
   const riskFlags = [isUrgent ? 'same_day' : '', /allerg|nut|gluten|dairy|egg/.test(lower) ? 'allergy' : '', /deliver/.test(lower) ? 'delivery' : ''].filter(Boolean);
   const missing = [productPreference ? '' : 'product'].filter(Boolean);
-  const baseInput = { evidenceId, intentId, channel, productPreference, message, urgency: isUrgent ? 'same_day' : 'normal' };
+  const baseInput = { evidenceId, intentId, channel, productPreference, shopperQuestion: safeMessage, urgency: isUrgent ? 'same_day' : 'normal' };
 
   const mcpChecks = await Promise.all([
     callMcp('square_list_catalog', { evidenceId, intentId }),
@@ -180,10 +193,10 @@ async function runFlow(body: any) {
     callMcp('kitchen_get_production_summary', baseInput),
     callMcp('evaluator_get_evidence_summary', { evidenceId, intentId, scenario: 'website_assistant_flow' })
   ]);
-  await callMcp('marketing_report_to_owner', { evidenceId, intentId, scenario: 'website_assistant_flow', mcpSources: mcpChecks.map((c) => c.source) });
+  if (requiresApproval) await callMcp('marketing_report_to_owner', { evidenceId, intentId, scenario: 'website_assistant_flow', mcpSources: mcpChecks.map((c) => c.source) });
   const createdAt = new Date().toISOString();
-  const approvalStore = await getApprovalStore();
-  const approvalRecord = upsertApprovalRecord(approvalStore, {
+  const approvalStore = requiresApproval ? await getApprovalStore() : undefined;
+  const approvalRecord = approvalStore ? upsertApprovalRecord(approvalStore, {
     approvalId,
     intentId,
     customer: name || 'Website customer',
@@ -194,12 +207,13 @@ async function runFlow(body: any) {
     proposedSideEffects: ['square_create_order', 'kitchen_create_ticket'],
     createdAt,
     expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString()
-  });
-  await saveApprovalStore(approvalStore);
-  const ownerDelivery = await sendTelegramOwnerCard(approvalRecord).catch(() => ({ ok: false, skipped: true, reason: 'telegram_send_failed' }));
+  }) : undefined;
+  if (approvalStore) await saveApprovalStore(approvalStore);
+  const ownerDelivery = approvalRecord ? await sendTelegramOwnerCard(approvalRecord).catch(() => ({ ok: false, skipped: true, reason: 'telegram_send_failed' })) : { ok: false, skipped: true, reason: 'approval_not_required' };
 
   const sourceSummary = mcpChecks.every((c) => c.source === 'mcp') ? 'real Steppe MCP' : 'safe simulator fallback';
-  const actions = requiredEvents.flatMap((type) => type === 'mcp_tool_called'
+  const eventTypes = requiresApproval ? requiredEvents : requiredEvents.filter((type) => type !== 'owner_approval_requested');
+  const actions = eventTypes.flatMap((type) => type === 'mcp_tool_called'
     ? mcpChecks.map((check) => ({ type, label: `MCP: ${check.tool}`, detail: `${check.source} · ${check.ok ? 'ok' : 'failed'} · ${check.latencyMs}ms` }))
     : [{ type, label: type.replace(/_/g, ' '), detail: detailFor(type, channel, intentId, sourceSummary) }]
   );
@@ -212,13 +226,15 @@ async function runFlow(body: any) {
     guardrails,
     reply: missing.length
       ? `Hi${name ? ` ${name}` : ''}. Thank you for reaching out to HappyCake. Pick one cake from the menu and send your pickup window — the bakery will confirm final availability, allergens, and pickup before fulfillment.`
-      : `Hi${name ? ` ${name}` : ''}. Your HappyCake request for ${productPreference} is queued. I checked the menu, order details, and bakery capacity. The bakery will confirm final pickup details before fulfillment.`,
-    ownerSummary: `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/POS/kitchen/evaluator checks; owner approval required before POS/kitchen handoff.`,
+      : requiresApproval
+        ? `Hi${name ? ` ${name}` : ''}. Your HappyCake request for ${productPreference} is queued. I checked the menu, order details, and bakery capacity. The bakery will confirm final pickup details before fulfillment.`
+        : `Hi${name ? ` ${name}` : ''}. ${productPreference ? `${productPreference} is a good place to start.` : 'For 12 guests, start with the 1.2 kg cakes that serve about 10 and ask the bakery about adding slices or a second cake.'} Send a pickup window when you are ready for the bakery to confirm.`,
+    ownerSummary: requiresApproval ? `${name || 'Customer'} wants ${productPreference || 'a cake'} from ${channel}. Evidence: ${sourceSummary} catalog/POS/kitchen/evaluator checks; owner approval required before POS/kitchen handoff.` : `Shopper asked for cake guidance from ${channel}. Evidence: ${sourceSummary} menu/capacity checks; no side-effect approval needed.`,
     actions,
-    orderIntent: { intentId, state: 'customer_reply_sent', channel, customerName: name, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: message, riskFlags, requiredFieldsMissing: missing },
+    orderIntent: { intentId, state: requiresApproval ? 'customer_reply_sent' : 'guidance_sent', channel, customerName: name, productPreference, occasion: isB2B ? 'office birthday' : undefined, pickupWindow: isUrgent ? 'today' : undefined, headcount: isB2B ? 10 : undefined, notes: safeMessage, riskFlags, requiredFieldsMissing: missing },
     mcpChecks,
     ownerDelivery,
-    requiredApprovals: [{ approvalId: approvalRecord.approvalId, intentId, status: approvalRecord.status, ownerChannel: 'telegram', summary: approvalRecord.summary, sideEffectsIfApproved: ['square_create_order', 'kitchen_create_ticket', 'send customer reply'] }],
+    requiredApprovals: approvalRecord ? [{ approvalId: approvalRecord.approvalId, intentId, status: approvalRecord.status, ownerChannel: 'telegram', summary: approvalRecord.summary, sideEffectsIfApproved: ['square_create_order', 'kitchen_create_ticket', 'send customer reply'] }] : [],
     riskFlags
   };
 }
