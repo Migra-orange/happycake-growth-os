@@ -1,0 +1,112 @@
+{
+  "base": "https://happycake-growth-os.vercel.app",
+  "timestamp": "2026-05-10T08:13:48Z",
+  "checks": [
+    {
+      "name": "health",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true
+      }
+    },
+    {
+      "name": "mcpSmoke",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "mode": "live",
+        "source": "mcp",
+        "usedFallback": false
+      }
+    },
+    {
+      "name": "mcpAudit",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "mode": "live",
+        "usedFallback": false,
+        "failures": []
+      }
+    },
+    {
+      "name": "ownerDashboard",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "mode": "live",
+        "storageMode": "vercel_blob",
+        "agentCount": 7,
+        "mcpSources": [
+          "mcp",
+          "mcp",
+          "mcp"
+        ],
+        "mcpOk": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "ownerConfig",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "storageMode": "vercel_blob",
+        "ownerAuthEnabled": true,
+        "durableConfigured": true
+      }
+    },
+    {
+      "name": "ownerActionUnauth",
+      "ok": true,
+      "status": 401,
+      "body": {
+        "error": "owner_auth_required"
+      }
+    },
+    {
+      "name": "assistantSyntheticLeadPending",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "mode": "live",
+        "usedFallback": false,
+        "mcpSources": [
+          "mcp",
+          "mcp",
+          "mcp",
+          "mcp"
+        ],
+        "approvalStatus": "pending",
+        "approvalIdPrefix": "own_"
+      }
+    },
+    {
+      "name": "ownerApproveSynthetic",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "executedSideEffects": [
+          "marketing_report_to_owner",
+          "square_create_order",
+          "kitchen_create_ticket"
+        ],
+        "mcpSources": [
+          "mcp",
+          "mcp",
+          "mcp"
+        ],
+        "idempotentReplay": false
+      }
+    }
+  ],
+  "ok": true
+}
