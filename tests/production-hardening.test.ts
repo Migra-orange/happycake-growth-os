@@ -70,6 +70,15 @@ describe('production hardening gates', () => {
     }
   });
 
+  it('keeps mutating MCP audit scenario runs owner-token gated', () => {
+    const audit = read('api/mcp/audit.ts');
+
+    expect(audit).toContain('function hasOwnerToken');
+    expect(audit).toContain('owner_auth_required');
+    expect(audit).toContain("req.method === 'POST'");
+    expect(audit.indexOf('owner_auth_required')).toBeLessThan(audit.indexOf('const tools = runScenario'));
+  });
+
   it('makes MCP smoke proof explicit about live mode and fallback state', () => {
     const smoke = read('api/mcp/smoke.ts');
 

@@ -49,7 +49,7 @@ npm run build
 npm test
 ```
 
-The app uses **Claude Code CLI via `claude -p`** when available. If Claude or MCP credentials are missing, it uses a clearly marked deterministic simulator so the evaluator can still run the vertical slice.
+The local app uses **Claude Code CLI via `claude -p`** when available and can fail closed in `ASSISTANT_MODE=live`. The public Vercel deployment is a serverless judge demo that proves real Steppe MCP connectivity, owner approval safety, Vercel Blob durability, and browser UX; it does not claim that Vercel itself executes the local `claude -p` binary. If Claude or MCP credentials are missing locally, the app uses a clearly marked deterministic simulator so the evaluator can still run the vertical slice.
 
 ## Main demo flow
 

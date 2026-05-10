@@ -34,8 +34,8 @@ What to verify:
 
 | Requirement | Proof |
 | --- | --- |
-| Claude Code CLI runtime | Local proof: `src/server/assistant.ts` shells to `claude -p`. Production Vercel proof: `api/assistant.ts` is an MCP-backed deterministic serverless flow until a deployed runtime-probe endpoint is added. No Claude Agent SDK, LangGraph, CrewAI, n8n, or alternate core LLM provider is used. |
-| Real Steppe MCP calls | `GET /api/mcp/audit` returns `mode: "live"`, `usedFallback: false`, and every check has `source: "mcp"`. `GET /api/mcp/smoke` also returns top-level `source: "mcp"`; sandbox catalog wording inside the Steppe response is provider data, not local fallback. |
+| Claude Code CLI runtime | Local/live Node proof: `src/server/assistant.ts` shells to `claude -p` and fails closed in `ASSISTANT_MODE=live`. Production Vercel proof is deliberately labeled as an MCP-backed serverless judge demo because Vercel functions do not run the local Claude Code CLI binary. No Claude Agent SDK, LangGraph, CrewAI, n8n, or alternate core LLM provider is used. |
+| Real Steppe MCP calls | `GET /api/mcp/audit` returns `mode: "live"`, `usedFallback: false`, and every check has `source: "mcp"`. `GET /api/mcp/smoke` also returns top-level `source: "mcp"`; any `providerMode`/sandbox wording inside Steppe payloads is provider scenario data, not local fallback. Mutating audit scenarios require `OWNER_API_TOKEN`; public GET proof is read-only. |
 | Owner approval safety | `POST /api/assistant` with `requireOwnerApproval: true` creates a pending approval and no POS/kitchen side effects. `POST /api/telegram/owner-action` without owner token returns `401 owner_auth_required`; token approval is the only path that creates sandbox Square/kitchen side effects. |
 | Durable owner state | `GET /api/owner/config` returns `storageMode: "vercel_blob"`, `durableConfigured: true`, `ownerAuthEnabled: true`; `GET /api/owner/dashboard` shows queue/config from the same durable mode. |
 | Private PII flows | Birthday reminders and discount claims are written server-side to private Vercel Blob with AES-GCM encrypted payloads; public API responses omit phone/email/birthday. |

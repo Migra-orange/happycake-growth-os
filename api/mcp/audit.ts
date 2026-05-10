@@ -26,6 +26,12 @@ function token() {
   return process.env.HAPPYCAKE_MCP_TEAM_TOKEN || process.env.HAPPYCAKE_TEAM_TOKEN;
 }
 
+function hasOwnerToken(req: VercelRequest) {
+  const ownerToken = process.env.OWNER_API_TOKEN;
+  const headerToken = Array.isArray(req.headers['x-owner-token']) ? req.headers['x-owner-token'][0] : req.headers['x-owner-token'];
+  return Boolean(ownerToken && headerToken === ownerToken);
+}
+
 function mcpEnvelope(tool: string, input: Record<string, unknown>) {
   return {
     jsonrpc: '2.0',
@@ -104,6 +110,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (process.env.MCP_MODE === 'simulated') return res.status(409).json({ ok: false, error: 'simulated_mode_active' });
 
   const runScenario = req.method === 'POST' && req.body?.confirm === 'happycake-sandbox-audit';
+  if (req.method === 'POST' && !hasOwnerToken(req)) {
+    return res.status(401).json({ ok: false, error: 'owner_auth_required' });
+  }
   const runId = `audit_${Date.now().toString(36)}`;
   const scenarioId = `scenario_${runId}`;
   const campaignId = `campaign_${runId}`;
