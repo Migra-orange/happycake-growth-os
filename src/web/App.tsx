@@ -94,7 +94,7 @@ function InstagramShot({ post }: { post: BusinessProfile['instagram']['posts'][n
         <div><b>{post.title}</b><small>{businessHandle(post.note)}</small></div>
         <em>•••</em>
       </div>
-      {post.image && <img src={post.image} alt={`${post.title} from ${post.note}`} loading="lazy" />}
+      {post.image && <img src={post.image} alt={`${post.title} from ${businessHandle(post.note)}`} />}
       <div className="instaMeta"><span>♡</span><span>💬</span><span>↗</span><small>{post.note}</small></div>
     </a>
   );
