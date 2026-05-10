@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 function shopMarkup() {
   const source = readFileSync('src/web/App.tsx', 'utf8');
-  const start = source.indexOf("{view === 'shop'");
+  const start = source.indexOf("{view === 'shop' &&");
   const end = source.indexOf("{view === 'owner'", start);
   if (start === -1 || end === -1) throw new Error('shop_markup_not_found');
   return source.slice(start, end);
@@ -11,15 +11,21 @@ function shopMarkup() {
 
 describe('public shop copy', () => {
   it('keeps internal agent/runtime language off the buyer-facing storefront', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
     const shop = shopMarkup();
+    const customerFacing = [shop, source.slice(source.indexOf('{wheelOpen &&'), source.indexOf('<nav className="topbar">'))]
+      .join('\n')
+      .replace(/\.replace\(\/owner\/gi, 'bakery'\)/g, '')
+      .replace(/\.replace\(\/POS\/gi, 'order system'\)/g, '')
+      .replace(/\.replace\(\/MCP\/gi, 'system'\)/g, '');
 
-    expect(shop).not.toMatch(/agent/i);
-    expect(shop).not.toMatch(/Growth OS/i);
-    expect(shop).not.toMatch(/whole cake funnel/i);
-    expect(shop).not.toMatch(/cold demand/i);
-    expect(shop).not.toMatch(/Google Maps/i);
-    expect(shop).not.toMatch(/owner/i);
-    expect(shop).not.toMatch(/Sandbox proof/i);
-    expect(shop).not.toMatch(/\bPOS\b/);
+    expect(customerFacing).not.toMatch(/agent/i);
+    expect(customerFacing).not.toMatch(/Growth OS/i);
+    expect(customerFacing).not.toMatch(/whole cake funnel/i);
+    expect(customerFacing).not.toMatch(/cold demand/i);
+    expect(customerFacing).not.toMatch(/Google Maps/i);
+    expect(customerFacing).not.toMatch(/owner/i);
+    expect(customerFacing).not.toMatch(/Sandbox proof/i);
+    expect(customerFacing).not.toMatch(/\bPOS\b/);
   });
 });

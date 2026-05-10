@@ -224,12 +224,12 @@ export default function App() {
         <button className="closeOffer" onClick={() => { setWheelOpen(false); localStorage.setItem('happycake-offer-seen', '1'); }} aria-label="Close offer">×</button>
         <p className="eyebrow">Before you choose</p>
         <h2>Spin for today’s HappyCake treat.</h2>
-        <p className="offerLead">A small reason to order now — discount, gift note, candles, or priority owner review.</p>
+        <p className="offerLead">A small reason to order now — discount, gift note, candles, or priority review.</p>
         <button className={`wheel ${spinning ? 'spinning' : ''}`} onClick={spinOffer} aria-label="Spin offer wheel">
           {offers.map((o, i) => <span key={o.code} style={{ transform: `rotate(${i * 60}deg)` }}>{o.label}</span>)}
           <b>{spinning ? 'Spinning…' : offer ? offer.label : 'SPIN'}</b>
         </button>
-        {offer && <div className="wonOffer"><small>Your code</small><strong>{offer.code}</strong><p>{offer.value}. Owner confirms final availability and pickup.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop with this offer</button></div>}
+        {offer && <div className="wonOffer"><small>Your code</small><strong>{offer.code}</strong><p>{offer.value}. Bakery confirms final availability and pickup.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop with this offer</button></div>}
       </div>
     </div>}
 
