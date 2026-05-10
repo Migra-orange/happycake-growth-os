@@ -22,6 +22,19 @@ const offers: Offer[] = [
   { label: 'Surprise note', value: 'Add a handwritten gift note to the box', code: 'NOTE', angle: 'gift' }
 ];
 
+const lifecycleStages = [
+  { stage: '1 · Demand', title: 'Find cold occasions', detail: 'Google Maps, Instagram, schools, offices, churches, local events.' },
+  { stage: '2 · Conversion', title: 'Turn visits into orders', detail: 'Catalog, offers, pickup details, owner-approved handoff.' },
+  { stage: '3 · Support', title: 'Track after purchase', detail: 'Pickup questions, changes, complaints, reviews, birthday reminders.' }
+];
+
+const ownerWorkstreams = [
+  { label: 'Cold lead mining', owner: 'Local demand scout', action: 'Finds local moments the owner can attack today.' },
+  { label: 'Content + ads', owner: 'Content + ad agent', action: 'Drafts posts, Google updates, and micro-campaigns for approval.' },
+  { label: 'Website conversion', owner: 'Site conversion agent', action: 'Turns cake shoppers into structured order requests.' },
+  { label: 'Customer support', owner: 'Customer support agent', action: 'Tracks pickup/support/review loops after the order.' }
+];
+
 const actionLabels: Record<string, string> = {
   lead_received: 'Order started',
   mcp_tool_called: 'Sandbox checked',
@@ -234,10 +247,10 @@ export default function App() {
     {view === 'shop' && <>
       <section className="shopHero">
         <div className="heroText">
-          <p className="eyebrow">Sugar Land · order online</p>
-          <h1>Pick the cake. See the price. Send the order.</h1>
-          <p className="lead">Real HappyCake classics with photos, weights, and prices. Choose one, add pickup details, and the owner confirms the final handoff.</p>
-          <div className="heroActions"><a className="primary" href="#catalog">Shop the menu</a><button className="secondary" onClick={() => setWheelOpen(true)}>Spin for a treat</button></div>
+          <p className="eyebrow">HappyCake Growth OS · Sugar Land</p>
+          <h1>Own the whole cake funnel.</h1>
+          <p className="lead">Agents find local occasions, create content and ad drafts, convert shoppers on the site, then track support and repeat orders — with the owner approving every customer-impacting move.</p>
+          <div className="heroActions"><a className="primary" href="#catalog">Order a cake</a><button className="secondary" onClick={() => setView('owner')}>See owner agents</button></div>
           {offer && <div className="offerRibbon"><span>{offer.code}</span>{offer.value}</div>}
         </div>
         <div className="heroShowcase">
@@ -246,10 +259,14 @@ export default function App() {
         </div>
       </section>
 
+      <section className="funnelMap">
+        {lifecycleStages.map(stage => <article key={stage.stage}><small>{stage.stage}</small><b>{stage.title}</b><p>{stage.detail}</p></article>)}
+      </section>
+
       <section className="promoRail">
-        <button onClick={() => setWheelOpen(true)}><b>Spin the wheel</b><span>Unlock a small ordering perk</span></button>
-        <button onClick={() => featured && startOrder(featured)}><b>Office birthday?</b><span>Pick cake "Napoleon" for 10</span></button>
-        <button onClick={() => products[0] && startOrder(products[0])}><b>Family dinner</b><span>Order cake "Honey" tonight</span></button>
+        <button onClick={() => setView('owner')}><b>Cold demand</b><span>Google Maps + local occasion leads</span></button>
+        <button onClick={() => setView('owner')}><b>Content + ads</b><span>Owner-approved Instagram/Google drafts</span></button>
+        <button onClick={() => featured && startOrder(featured)}><b>Convert now</b><span>Priced catalog → approval queue</span></button>
       </section>
 
       <section className="catalogSection" id="catalog">
@@ -284,17 +301,17 @@ export default function App() {
       </section>}
 
       <section className="marketingSection">
-        <div><p className="eyebrow">Growth hooks</p><h2>Not a brochure. A buying machine.</h2></div>
-        <div className="hookGrid"><article><b>Wheel offer</b><p>Turns a cold visitor into an active shopper in the first five seconds.</p></article><article><b>Priced catalog</b><p>No vague “ask us” energy. The customer can choose and send an order.</p></article><article><b>Repeat loop</b><p>Offer codes, office orders, and reminder cards create the next purchase.</p></article></div>
+        <div><p className="eyebrow">Agentic funnel</p><h2>From cold lead to repeat cake order.</h2></div>
+        <div className="hookGrid"><article><b>Acquire</b><p>Local demand scout finds office birthdays, school events, church gatherings, and Google Maps moments.</p></article><article><b>Convert</b><p>Site conversion agent turns visitors into structured cake requests and queues owner approval.</p></article><article><b>Support</b><p>Customer support and retention agents track pickup questions, reviews, reminders, and repeat occasions.</p></article></div>
       </section>
     </>}
 
     {view === 'owner' && <>
       <section className="ownerHero dashboardHero">
         <div>
-          <p className="eyebrow">Owner command center</p>
-          <h1>Stats, orders, agents — one control room.</h1>
-          <p className="lead">A private owner dashboard for seeing what sells, what needs approval, and how the customer-facing agents behave.</p>
+          <p className="eyebrow">Owner agent command center</p>
+          <h1>Control every agent in the funnel.</h1>
+          <p className="lead">The owner sees acquisition, content/ad work, website conversion, approvals, customer support, and retention in one cockpit — agents can suggest or draft, but risky actions wait for approval.</p>
         </div>
         <div className="modelCard liveCard">
           <small>{dashboard?.mode === 'live' ? 'Live sandbox connected' : 'Dashboard loading'}</small>
@@ -303,17 +320,21 @@ export default function App() {
         </div>
       </section>
 
+      <section className="ownerWorkMap">
+        {ownerWorkstreams.map(work => <article key={work.label}><span>{work.label}</span><b>{work.owner}</b><p>{work.action}</p><button onClick={() => document.getElementById('agent-config')?.scrollIntoView({ behavior: 'smooth' })}>Configure</button></article>)}
+      </section>
+
       <section className="ownerDashboard">
         <div className="kpiGrid">
-          <article><span>Today revenue</span><b>${metric('revenueTodayUsd')}</b><small>Sandbox/POS summary</small></article>
+          <article><span>Cold leads</span><b>{dashboard?.funnel?.[0]?.value || 0}</b><small>Local demand pool</small></article>
           <article><span>Order requests</span><b>{metric('orderRequests')}</b><small>{metric('pendingApprovals')} waiting approval</small></article>
           <article><span>Conversion</span><b>{metric('conversionRate')}%</b><small>Visitor → request</small></article>
-          <article><span>Avg order</span><b>${metric('averageOrderValueUsd')}</b><small>Catalog AOV</small></article>
+          <article><span>Support loops</span><b>{dashboard?.funnel?.[5]?.value || 0}</b><small>Reviews / reminders / support</small></article>
         </div>
 
         <div className="dashboardGrid">
           <section className="panel funnelPanel">
-            <div className="sectionHeader compact"><div><p className="eyebrow">Funnel</p><h2>Where customers drop.</h2></div></div>
+            <div className="sectionHeader compact"><div><p className="eyebrow">Full funnel</p><h2>Where each agent works.</h2></div></div>
             <div className="funnelBars">{dashboard?.funnel?.map((f, i) => {
               const max = dashboard.funnel[0]?.value || 1;
               return <div className="funnelRow" key={f.label}><div><b>{f.label}</b><span>{f.value}</span></div><i style={{ width: `${Math.max(8, (f.value / max) * 100)}%` }} /><em>{i === 0 ? 'traffic' : i === 1 ? 'hook' : i === 2 ? 'intent' : i === 3 ? 'order' : 'money'}</em></div>
@@ -350,7 +371,7 @@ export default function App() {
 
       <section className="autopilotPanel">
         <div className="sectionHeader">
-          <div><p className="eyebrow">Autopilot engine</p><h2>The funnel runs as a guarded state machine.</h2></div>
+          <div><p className="eyebrow">Autopilot engine</p><h2>Demand → conversion → support, with approval gates.</h2></div>
           <span className="softBadge">No POS/kitchen before approval</span>
         </div>
         <div className="autopilotTimeline">
@@ -361,9 +382,9 @@ export default function App() {
         </div>
       </section>
 
-      <section className="agentConsole">
+      <section className="agentConsole" id="agent-config">
         <div className="sectionHeader">
-          <div><p className="eyebrow">Agent configuration</p><h2>Control how the AI sells.</h2></div>
+          <div><p className="eyebrow">Agent ownership</p><h2>Every agent is visible, editable, and owner-gated.</h2></div>
           <div className="ownerAuthBox"><label>Owner token <input type="password" value={ownerToken} onChange={e => updateOwnerToken(e.target.value)} placeholder="Required for save/approve" autoComplete="off" /></label><button className="primary" onClick={saveAgentConfig}>{configSaved ? 'Saved' : 'Save config'}</button></div>
         </div>
         <div className="agentGrid">{agentDrafts.map(agent => <article className={agent.enabled ? 'agentCard enabled' : 'agentCard'} key={agent.id}>

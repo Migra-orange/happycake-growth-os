@@ -127,17 +127,17 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         blockedSideEffects: 2
       },
       funnel: [
-        { label: 'Site visitors', value: 236 },
-        { label: 'Wheel spins', value: 91 },
+        { label: 'Cold local leads', value: 420 },
+        { label: 'Content/ad clicks', value: 164 },
+        { label: 'Website visitors', value: 236 },
         { label: 'Cake selected', value: 44 },
         { label: 'Order requests', value: 11 },
-        { label: 'Owner approved', value: 7 },
-        { label: 'Follow-up queued', value: 5 }
+        { label: 'Support/retention queued', value: 5 }
       ],
       channels: [
-        { label: 'Website', orders: 6, revenueUsd: 254 },
+        { label: 'Google Maps', orders: 4, revenueUsd: 184 },
         { label: 'Instagram', orders: 3, revenueUsd: 132 },
-        { label: 'WhatsApp', orders: 2, revenueUsd: 88 }
+        { label: 'Website', orders: 6, revenueUsd: 254 }
       ],
       topProducts: [
         { name: 'cake "Honey"', orders: 4, revenueUsd: 168 },
@@ -150,12 +150,13 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       autopilotTimeline,
       approvalQueue,
       agents: [
-        { id: 'sales-concierge', name: 'Sales concierge', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 80, goal: 'Convert cake shoppers into owner-approved order requests.' },
-        { id: 'promo-engine', name: 'Promo engine', enabled: true, mode: 'suggest_only', tone: 'playful', dailyLimit: 12, goal: 'Run wheel offers, office bundles, comeback cards, and offer tests.' },
-        { id: 'owner-approval', name: 'Owner approval router', enabled: true, mode: 'telegram_first', tone: 'concise', dailyLimit: 120, goal: 'Queue approvals and block POS/kitchen side effects until owner approval.' },
-        { id: 'evidence-auditor', name: 'Evidence auditor', enabled: true, mode: 'always_on', tone: 'silent', dailyLimit: 500, goal: 'Check MCP/source proof and keep sandbox runs judge-safe.' },
-        { id: 'retention-agent', name: 'Retention agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 40, goal: 'Schedule review asks, birthday reminders, comeback nudges, and office repeat orders.' },
-        { id: 'channel-ops', name: 'Channel ops agent', enabled: true, mode: 'always_on', tone: 'concise', dailyLimit: 200, goal: 'Watch stalled threads, expired approvals, failed sends, and kitchen rejects.' }
+        { id: 'local-demand-scout', name: 'Local demand scout', enabled: true, mode: 'suggest_only', tone: 'concise', dailyLimit: 60, goal: 'Find cold local demand from Google Maps, local occasions, offices, schools, and churches.' },
+        { id: 'content-ad-agent', name: 'Content + ad agent', enabled: true, mode: 'owner_approval', tone: 'playful', dailyLimit: 24, goal: 'Draft Instagram/Google content, small ads, and offer angles for owner approval.' },
+        { id: 'site-conversion-agent', name: 'Site conversion agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 100, goal: 'Convert catalog visitors into owner-approved order requests.' },
+        { id: 'owner-approval-router', name: 'Owner approval router', enabled: true, mode: 'telegram_first', tone: 'concise', dailyLimit: 140, goal: 'Queue every customer-impacting side effect for owner approval.' },
+        { id: 'customer-support-agent', name: 'Customer support agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 80, goal: 'Track pickup questions, changes, complaints, and post-purchase support.' },
+        { id: 'retention-review-agent', name: 'Retention + review agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 45, goal: 'Trigger reviews, birthday reminders, and repeat-order nudges.' },
+        { id: 'evidence-auditor', name: 'Evidence auditor', enabled: true, mode: 'always_on', tone: 'silent', dailyLimit: 500, goal: 'Check MCP/source proof and sandbox evidence.' }
       ]
     });
   } catch {

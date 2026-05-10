@@ -8,13 +8,15 @@ type AgentConfigStore = { agents:AgentConfigRecord[]; version:number; updatedAt:
 type GlobalWithConfigStore = typeof globalThis & { __happycakeAgentConfigStore?: AgentConfigStore };
 
 const DEFAULT_AGENT_CONFIG: AgentConfigRecord[] = [
-  { id: 'sales-concierge', name: 'Sales concierge', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 80, goal: 'Convert cake shoppers into owner-approved order requests.' },
-  { id: 'promo-engine', name: 'Promo engine', enabled: true, mode: 'suggest_only', tone: 'playful', dailyLimit: 12, goal: 'Run wheel offers, office bundles, comeback cards, and offer tests.' },
-  { id: 'owner-approval', name: 'Owner approval router', enabled: true, mode: 'telegram_first', tone: 'concise', dailyLimit: 120, goal: 'Queue approvals and block POS/kitchen side effects until owner approval.' },
-  { id: 'evidence-auditor', name: 'Evidence auditor', enabled: true, mode: 'always_on', tone: 'silent', dailyLimit: 500, goal: 'Check MCP/source proof and keep sandbox runs judge-safe.' },
-  { id: 'retention-agent', name: 'Retention agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 40, goal: 'Schedule review asks, birthday reminders, comeback nudges, and office repeat orders.' },
-  { id: 'channel-ops', name: 'Channel ops agent', enabled: true, mode: 'always_on', tone: 'concise', dailyLimit: 200, goal: 'Watch stalled threads, expired approvals, failed sends, and kitchen rejects.' }
+  { id: 'local-demand-scout', name: 'Local demand scout', enabled: true, mode: 'suggest_only', tone: 'concise', dailyLimit: 60, goal: 'Find cold local demand from Google Maps moments, schools, offices, churches, and neighborhood occasions before they reach the site.' },
+  { id: 'content-ad-agent', name: 'Content + ad agent', enabled: true, mode: 'owner_approval', tone: 'playful', dailyLimit: 24, goal: 'Create Instagram/Google content, offer angles, and small ad drafts that pull cold leads into the HappyCake funnel.' },
+  { id: 'site-conversion-agent', name: 'Site conversion agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 100, goal: 'Convert catalog visitors into owner-approved order requests with offer codes, pickup details, and safe replies.' },
+  { id: 'owner-approval-router', name: 'Owner approval router', enabled: true, mode: 'telegram_first', tone: 'concise', dailyLimit: 140, goal: 'Show the owner exactly what each agent wants to do and block POS/kitchen/customer-impacting side effects until approval.' },
+  { id: 'customer-support-agent', name: 'Customer support agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 80, goal: 'Track post-purchase questions, pickup changes, complaints, and handoff status without inventing availability or policies.' },
+  { id: 'retention-review-agent', name: 'Retention + review agent', enabled: true, mode: 'owner_approval', tone: 'warm_direct', dailyLimit: 45, goal: 'Trigger reviews, birthday reminders, office reorder nudges, and comeback offers after fulfillment.' },
+  { id: 'evidence-auditor', name: 'Evidence auditor', enabled: true, mode: 'always_on', tone: 'silent', dailyLimit: 500, goal: 'Check MCP/source proof, agent actions, and sandbox evidence so owner and judges can trust what happened.' }
 ];
+
 
 const allowedIds = new Set(DEFAULT_AGENT_CONFIG.map(agent => agent.id));
 const allowedModes = new Set<AgentMode>(['owner_approval', 'suggest_only', 'telegram_first', 'always_on', 'paused']);
@@ -131,8 +133,18 @@ async function blobSetStore(store: AgentConfigStore) {
   }
 }
 
+function migrateStore(store: AgentConfigStore): AgentConfigStore {
+  return {
+    ...store,
+    agents: mergeAgents(store.agents || [], []),
+    version: Math.max(store.version || 1, 3),
+    updatedAt: store.updatedAt || new Date().toISOString()
+  };
+}
+
 async function readStore() {
-  return await redisGet() || await blobGetStore() || memoryStore();
+  const store = await redisGet() || await blobGetStore() || memoryStore();
+  return migrateStore(store);
 }
 
 async function writeStore(agentsPayload: unknown) {
