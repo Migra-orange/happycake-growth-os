@@ -88,6 +88,7 @@ Example:
 
 - `npm run evaluator:smoke` writes `evidence/evaluator-smoke-latest.json` with normalized timeline/source proof and omits volatile UUIDs, timestamps, customer PII, and credentials.
 - `npm run production:smoke` writes `evidence/production-smoke-latest.json` with normalized live endpoint proof for `https://happycake-growth-os.vercel.app`.
+- Judge proof map: see `SUBMISSION.md` for exact endpoint assertions covering Claude Code CLI, Steppe MCP `source:mcp`, owner approval safety, durable Vercel Blob state, encrypted private PII flows, buyer UX, and secret hygiene.
 
 ## Why this helps the real business
 

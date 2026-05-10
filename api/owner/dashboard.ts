@@ -85,24 +85,36 @@ async function saveApprovalStore(store: ApprovalStore) {
   } catch { return false; }
 }
 
-async function queueForDashboard() {
-  return listActiveApprovals(await getApprovalStore()).map((item) => ({
-    approvalId: item.approvalId,
-    intentId: item.intentId,
-    customer: item.customer,
-    status: item.status,
-    riskFlags: item.riskFlags,
-    policyDecision: item.policyDecision,
-    summary: item.summary,
-    proposedSideEffects: item.proposedSideEffects,
-    expiresIn: approvalExpiresIn(item),
-    decisionAt: item.decisionAt,
-    decisionSource: item.decisionSource,
-    executedSideEffects: item.executedSideEffects
-  }));
+function hasOwnerToken(req: VercelRequest) {
+  return Boolean(process.env.OWNER_API_TOKEN) && req.headers['x-owner-token'] === process.env.OWNER_API_TOKEN;
 }
 
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+function publicQueueLabel(index: number, status: StoredApprovalStatus) {
+  if (status === 'scheduled') return `Scheduled follow-up ${index + 1}`;
+  return `Pending approval ${index + 1}`;
+}
+
+async function queueForDashboard(authenticated = false) {
+  return listActiveApprovals(await getApprovalStore()).map((item, index) => {
+    const publicItem = {
+      approvalId: authenticated ? item.approvalId : `public_${index + 1}`,
+      intentId: authenticated ? item.intentId : `public_intent_${index + 1}`,
+      customer: authenticated ? item.customer : publicQueueLabel(index, item.status),
+      status: item.status,
+      riskFlags: item.riskFlags,
+      policyDecision: item.policyDecision,
+      summary: authenticated ? item.summary : item.status === 'scheduled' ? 'Retention or support follow-up is queued; customer details are private.' : 'Customer-impacting handoff is waiting for owner approval; customer details are private.',
+      proposedSideEffects: item.proposedSideEffects,
+      expiresIn: approvalExpiresIn(item),
+      decisionAt: authenticated ? item.decisionAt : undefined,
+      decisionSource: authenticated ? item.decisionSource : undefined,
+      executedSideEffects: authenticated ? item.executedSideEffects : []
+    };
+    return publicItem;
+  });
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const checks = await Promise.all([
       callMcp('square_get_pos_summary', { dashboard: true }),
@@ -110,7 +122,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       callMcp('evaluator_get_evidence_summary', { dashboard: true })
     ]);
     const live = checks.every(c => c.ok && c.source === 'mcp');
-    const approvalQueue = await queueForDashboard();
+    const ownerAuthenticated = hasOwnerToken(req);
+    const approvalQueue = await queueForDashboard(ownerAuthenticated);
     return res.status(200).json({
       ok: true,
       mode: live ? 'live' : 'simulated',

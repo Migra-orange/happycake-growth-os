@@ -1,5 +1,5 @@
 {
-  "brand": "Happy Cake",
+  "brand": "HappyCake",
   "status": "private-prelaunch",
   "launchGate": "May 9, 10:00 CT",
   "storage": "private/hackathon/happy-cake/asset-pack; not served by Next.js public assets",
@@ -11,7 +11,7 @@
     "rawSourceBytes": 8272304203
   },
   "logo": {
-    "sourceDescription": "official Happy Cake wordmark, optimized from local source inventory",
+    "sourceDescription": "official HappyCake wordmark, optimized from local source inventory",
     "files": [
       {
         "path": "logo/happy-cake-logo-1024.png",

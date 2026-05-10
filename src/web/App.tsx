@@ -48,9 +48,9 @@ const fallbackBusinessProfile: BusinessProfile = {
     { title: 'Chocolate layer cake', url: 'https://www.instagram.com/happycake.us/', image: '/assets/social/happy-cake-social-04.webp', note: 'From @happycake.us' },
     { title: 'Honey cake slice', url: 'https://www.instagram.com/happycake.us/', image: '/assets/social/happy-cake-social-07.webp', note: 'From @happycake.us' }
   ] },
-  googleMaps: { label: 'Happy Cake on Google Maps', searchUrl: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', status: 'google_maps_limited_view_verified', address: '350 Promenade Wy #500, Sugar Land, TX 77478', phone: '(281) 979-8320', website: 'happycake.us', plusCode: 'J952+JW Sugar Land, Texas', ownerPost: 'Every celebration deserves a cake made just for them.' },
+  googleMaps: { label: 'HappyCake on Google Maps', searchUrl: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', status: 'google_maps_limited_view_verified', address: '350 Promenade Wy #500, Sugar Land, TX 77478', phone: '(281) 979-8320', website: 'happycake.us', plusCode: 'J952+JW Sugar Land, Texas', ownerPost: 'Every celebration deserves a cake made just for them.' },
   reviews: { source: 'Google Maps + public web snippets checked May 2026', status: 'google_rating_visible_review_text_limited_public_snippets_used', summary: 'Google Maps currently exposes the 4.7 rating in limited view; public review snippets add specific customer language below.', rating: 4.7, countLabel: 'Google rating · public snippets', items: [
-    { label: 'Google Maps rating', rating: 4.7, text: 'Happy Cake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', source: 'Open on Google Maps' },
+    { label: 'Google Maps rating', rating: 4.7, text: 'HappyCake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', source: 'Open on Google Maps' },
     { label: 'Local public review', rating: 5, text: '“Phenomenal cakes and service. Highly recommended.”', url: 'https://local.yahoo.com/info-238808884-happy-cake-sugar-land', source: 'Read more' },
     { label: 'Houston food creator note', rating: 5, text: '“Cake slices start at $8+. Highly recommend: Honey Cake Slice.”', url: 'https://www.tiktok.com/discover/happy-cake-sugar-land', source: 'See creator note' }
   ] },
@@ -110,6 +110,7 @@ export default function App() {
   const [view, setView] = useState<'shop' | 'owner'>(() => (typeof window !== 'undefined' && (window.location.hash === '#owner' || window.location.search.includes('owner=1')) ? 'owner' : 'shop'));
   const [channel, setChannel] = useState<Channel>('website');
   const [name, setName] = useState('');
+  const [contactDetail, setContactDetail] = useState('');
   const [selected, setSelected] = useState<Product | null>(null);
   const [pickup, setPickup] = useState('Today after work');
   const [headcount, setHeadcount] = useState('10');
@@ -132,7 +133,7 @@ export default function App() {
   const [agentDrafts, setAgentDrafts] = useState<AgentConfig[]>([]);
   const [configSaved, setConfigSaved] = useState(false);
   const [configStatus, setConfigStatus] = useState('loading server config');
-  const [ownerToken, setOwnerToken] = useState('');
+  const [ownerToken, setOwnerToken] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('happycake-owner-token') || '' : ''));
   const [birthdayName, setBirthdayName] = useState('');
   const [birthdayPhone, setBirthdayPhone] = useState('');
   const [birthdayDate, setBirthdayDate] = useState('');
@@ -149,12 +150,11 @@ export default function App() {
     fetch('/data/business-profile.json').then(r => r.json()).then(setBusinessProfile).catch(() => {});
     fetch('/data/growth-model.json').then(r => r.json()).then(setGrowth).catch(() => {});
     refreshDashboard();
-    setOwnerToken(localStorage.getItem('happycake-owner-token') || '');
   }, []);
 
-  function ownerHeaders(): Record<string, string> {
+  function ownerHeaders(token = ownerToken): Record<string, string> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (ownerToken.trim()) headers['x-owner-token'] = ownerToken.trim();
+    if (token.trim()) headers['x-owner-token'] = token.trim();
     return headers;
   }
 
@@ -162,11 +162,12 @@ export default function App() {
     setOwnerToken(value);
     if (value.trim()) localStorage.setItem('happycake-owner-token', value.trim());
     else localStorage.removeItem('happycake-owner-token');
+    if (view === 'owner') window.setTimeout(() => refreshDashboard(value), 0);
   }
 
-  async function refreshDashboard() {
+  async function refreshDashboard(tokenOverride = ownerToken) {
     try {
-      const d:Dashboard = await fetch(`${API}/api/owner/dashboard`).then(r => r.json());
+      const d:Dashboard = await fetch(`${API}/api/owner/dashboard`, { headers: ownerHeaders(tokenOverride) }).then(r => r.json());
       setDashboard(d);
       try {
         const cfg:AgentConfigResponse = await fetch(`${API}/api/owner/config`).then(r => r.json());
@@ -221,10 +222,10 @@ export default function App() {
   async function submitOrder() {
     const product = selected || featured;
     if (!product) return;
-    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Pickup: ${pickup}. Headcount: ${headcount}. ${promoClaim ? `Offer code: ${promoClaim.promoCode} — ${promoClaim.discountPercent}% off. ` : ''}${note}`;
+    const request = `Order request: ${product.name}, ${product.weight}, $${product.priceUsd}. Contact provided: ${contactDetail.trim() ? 'yes' : 'not provided'}. Pickup: ${pickup}. Headcount: ${headcount}. ${promoClaim ? `Offer code: ${promoClaim.promoCode} — ${promoClaim.discountPercent}% off. ` : ''}${note}`;
     setLoading(true);
     setOwnerResult('');
-    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: promoClaim?.promoCode }) });
+    const res = await fetch(`${API}/api/assistant`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, customerName: name || undefined, message: request, source: 'happycake-shop-catalog', requireOwnerApproval: true, productId: product.id, offerCode: promoClaim?.promoCode, contactProvided: Boolean(contactDetail.trim()) }) });
     const data = await res.json();
     setResult(data);
     if (data?.requiredApprovals?.[0]) {
@@ -480,6 +481,7 @@ export default function App() {
         <div className="orderForm">
           <label>Your name <input value={name} onChange={e=>setName(e.target.value)} placeholder="Optional" /></label>
           <label>Reply channel <select value={channel} onChange={e=>setChannel(e.target.value as Channel)}><option value="website">Website</option><option value="instagram">Instagram DM</option><option value="whatsapp">WhatsApp</option></select></label>
+          <label>Reply contact <input value={contactDetail} onChange={e=>setContactDetail(e.target.value)} placeholder="Instagram handle, WhatsApp number, or email" /></label>
           <label>Pickup window <input value={pickup} onChange={e=>setPickup(e.target.value)} /></label>
           <label>Guests <input value={headcount} onChange={e=>setHeadcount(e.target.value)} /></label>
           <label>Note <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add text on box, occasion, or question." /></label>

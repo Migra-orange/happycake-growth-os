@@ -58,4 +58,26 @@ describe('public shop copy', () => {
     expect(shop).toContain('Spin for a discount');
     expect(source).not.toContain('setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }');
   });
+
+  it('asks buyers for a reply contact before sending an order request without forwarding raw contact text', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+    const shop = shopMarkup();
+
+    expect(source).toContain("const [contactDetail, setContactDetail] = useState('');");
+    expect(shop).toContain('Reply contact');
+    expect(shop).toContain('Instagram handle, WhatsApp number, or email');
+    expect(source).toContain("Contact provided: ${contactDetail.trim() ? 'yes' : 'not provided'}");
+    expect(source).toContain('contactProvided: Boolean(contactDetail.trim())');
+    expect(source).not.toContain("Contact: ${contactDetail.trim() || 'not provided'}");
+  });
+
+  it('uses HappyCake spelling in public-facing local proof copy', () => {
+    const source = readFileSync('src/web/App.tsx', 'utf8');
+    const businessProfile = readFileSync('public/data/business-profile.json', 'utf8');
+
+    expect(source).toContain('HappyCake on Google Maps');
+    expect(source).toContain('HappyCake is listed on Google Maps');
+    expect(businessProfile).toContain('HappyCake on Google Maps');
+    expect(businessProfile).toContain('HappyCake is listed on Google Maps');
+  });
 });

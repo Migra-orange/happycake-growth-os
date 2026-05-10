@@ -27,7 +27,7 @@
     ]
   },
   "googleMaps": {
-    "label": "Happy Cake on Google Maps",
+    "label": "HappyCake on Google Maps",
     "searchUrl": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX",
     "status": "google_maps_limited_view_verified",
     "address": "350 Promenade Wy #500, Sugar Land, TX 77478",
@@ -46,7 +46,7 @@
       {
         "label": "Google Maps rating",
         "rating": 4.7,
-        "text": "Happy Cake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.",
+        "text": "HappyCake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.",
         "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX",
         "source": "Open on Google Maps"
       },

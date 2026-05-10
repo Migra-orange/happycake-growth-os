@@ -64,4 +64,19 @@ describe('production hardening gates', () => {
       expect(source).toContain('429');
     }
   });
+
+  it('keeps unauthenticated owner dashboard judge-visible but strips actionable queue details', () => {
+    const dashboard = read('api/owner/dashboard.ts');
+    const app = read('src/web/App.tsx');
+
+    expect(dashboard).toContain('function hasOwnerToken');
+    expect(dashboard).toContain('publicQueueLabel');
+    expect(dashboard).toContain('customer details are private');
+    expect(dashboard).toContain('approvalId: authenticated ? item.approvalId');
+    expect(dashboard).toContain('intentId: authenticated ? item.intentId');
+    expect(dashboard).toContain('summary: authenticated ? item.summary');
+    expect(dashboard).toContain('executedSideEffects: authenticated ? item.executedSideEffects : []');
+    expect(dashboard).toContain('const ownerAuthenticated = hasOwnerToken(req)');
+    expect(app).toContain('fetch(`${API}/api/owner/dashboard`, { headers: ownerHeaders(tokenOverride) })');
+  });
 });
