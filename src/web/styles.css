@@ -536,14 +536,11 @@ main { min-height: 100vh; overflow: hidden; }
 .occasionIcon { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 20px; margin-bottom: 18px; font-style: normal; font-size: 1.7rem; background: linear-gradient(135deg,#fff,#ffe3b7); box-shadow: 0 18px 36px rgba(93,53,27,.12); border: 1px solid rgba(93,53,27,.08); }
 .occasionGrid article::after { content: ''; position: absolute; right: -28px; top: -28px; width: 90px; height: 90px; border-radius: 50%; background: rgba(239,154,53,.12); }
 .instagramCard { background: radial-gradient(circle at 20% 10%, rgba(238,136,64,.22), transparent 38%), linear-gradient(145deg,#fff,#fff3e4); }
-.postGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 18px; }
-.instaPost { min-height: 178px; display: flex; flex-direction: column; justify-content: flex-end; gap: 9px; padding: 16px; border-radius: 24px; color: #fff; text-decoration: none; background: linear-gradient(145deg,rgba(58,33,24,.2),rgba(58,33,24,.7)), url('/assets/hero/happy-cake-hero-02.webp') center/cover; box-shadow: 0 24px 60px rgba(58,33,24,.14); transform: translateY(0); transition: transform .2s ease, box-shadow .2s ease; }
-.instaPost:nth-child(2) { background-image: linear-gradient(145deg,rgba(58,33,24,.18),rgba(58,33,24,.72)), url('/assets/social/happy-cake-social-07.webp'); }
-.instaPost:nth-child(3) { background-image: linear-gradient(145deg,rgba(58,33,24,.18),rgba(58,33,24,.72)), url('/assets/social/happy-cake-social-08.webp'); }
-.instaPost:hover { transform: translateY(-5px); box-shadow: 0 30px 74px rgba(58,33,24,.2); }
-.instaPost span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.2); font-weight: 900; }
-.instaPost b { font-size: 1.1rem; }
-.instaPost small { color: rgba(255,255,255,.82); font-weight: 800; }
+.postGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(326px,100%),1fr)); gap: 14px; margin-top: 18px; align-items: start; }
+.instaPost { min-height: 430px; padding: 8px; border-radius: 24px; background: rgba(255,255,255,.72); border: 1px solid rgba(88,53,35,.1); box-shadow: 0 24px 60px rgba(58,33,24,.12); overflow: hidden; display: flex; justify-content: center; }
+.instaPost .instagram-media { min-width: min(326px,100%) !important; width: 326px !important; max-width: 100% !important; margin: 0 auto !important; border-radius: 18px !important; }
+.instaPost iframe { border-radius: 18px !important; }
+.instaPost a { color: #a15c1f; font-weight: 850; text-decoration: none; }
 .reviewOrbit a { border-radius: 20px; padding: 14px; background: rgba(255,255,255,.74); border: 1px solid rgba(88,53,35,.1); color: inherit; text-decoration: none; animation: orbitCard 5.4s ease-in-out infinite; }
 .reviewOrbit a:nth-child(2) { animation-delay: .2s; }
 .reviewOrbit a:nth-child(3) { animation-delay: .4s; }

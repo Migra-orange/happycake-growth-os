@@ -4,6 +4,10 @@ import type { AssistantResponse } from '../shared/schema';
 
 type Product = { id:string; name:string; shortName:string; priceUsd:number; weight:string; serves:string; availabilityPolicy:string; tags:string[]; image:string; description:string };
 type BusinessProfile = { brand:string; locality:string; instagram:{ handle:string; url:string; label:string; posts:{ title:string; url:string; note:string }[] }; googleMaps:{ label:string; searchUrl:string; status:string; address:string; phone:string; website:string; plusCode:string; ownerPost?:string }; reviews:{ source:string; status:string; summary:string; rating:number; countLabel:string; items:{ label:string; text:string; rating:number; url:string }[] }; agentReadable:{ llmsTxt:string; manifest:string; catalog:string; assistant:string } };
+
+declare global {
+  interface Window { instgrm?: { Embeds?: { process: () => void } } }
+}
 type ChatMessage = { role:'visitor' | 'assistant'; text:string };
 type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
@@ -40,7 +44,7 @@ const fallbackBusinessProfile: BusinessProfile = {
   brand: 'HappyCake',
   locality: 'Sugar Land, Texas',
   instagram: { handle: '@happycake.us', url: 'https://www.instagram.com/happycake.us/', label: 'Instagram', posts: [
-    { title: 'Latest reel', url: 'https://www.instagram.com/happycake.us/reel/DWVzB3_GOJ_/', note: 'Open on Instagram' },
+    { title: 'Latest reel', url: 'https://www.instagram.com/reel/DWVzB3_GOJ_/', note: 'Open on Instagram' },
     { title: 'Cake reel', url: 'https://www.instagram.com/reel/DXNImvmki_N/', note: 'Open on Instagram' },
     { title: 'Bakery reel', url: 'https://www.instagram.com/reel/DXGdcJNjqxs/', note: 'Open on Instagram' }
   ] },
@@ -80,6 +84,36 @@ function cleanShopperText(text = '') {
     .replace(/POS/gi, 'order system')
     .replace(/owner/gi, 'bakery')
     .replace(/MCP/gi, 'system');
+}
+
+function InstagramEmbed({ post }: { post: BusinessProfile['instagram']['posts'][number] }) {
+  useEffect(() => {
+    const scriptId = 'instagram-embed-script';
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (!existing) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.async = true;
+      script.src = 'https://www.instagram.com/embed.js';
+      script.onload = () => window.instgrm?.Embeds?.process();
+      document.body.appendChild(script);
+    } else {
+      window.instgrm?.Embeds?.process();
+    }
+  }, [post.url]);
+
+  return (
+    <article className="instaPost">
+      <blockquote
+        className="instagram-media"
+        data-instgrm-captioned
+        data-instgrm-permalink={post.url}
+        data-instgrm-version="14"
+      >
+        <a href={post.url} target="_blank" rel="noreferrer">{post.title} — {post.note}</a>
+      </blockquote>
+    </article>
+  );
 }
 
 export default function App() {
@@ -422,7 +456,7 @@ export default function App() {
           <p className="eyebrow">Instagram</p>
           <h2>Latest posts from {businessProfile.instagram.handle}.</h2>
           <div className="postGrid">
-            {(businessProfile.instagram.posts || []).map((post, i) => <a className="instaPost" href={post.url} target="_blank" rel="noreferrer" key={post.url}><span>0{i + 1}</span><b>{post.title}</b><small>{post.note}</small></a>)}
+            {(businessProfile.instagram.posts || []).map(post => <InstagramEmbed post={post} key={post.url} />)}
           </div>
         </div>
         <div className="connectCard reviewCard visualCard">

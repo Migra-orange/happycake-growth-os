@@ -15,10 +15,14 @@ function shopMarkup() {
 
 describe('public contact, reviews, and shopper helper surfaces', () => {
   it('adds Instagram posts, always-open assistant chat, and clickable Google review/detail proof', () => {
+    const source = appSource();
     const shop = shopMarkup();
 
     expect(shop).toContain('Latest posts from');
-    expect(shop).toContain('instaPost');
+    expect(source).toContain('className="instaPost"');
+    expect(source).toContain('InstagramEmbed');
+    expect(source).toContain('data-instgrm-permalink');
+    expect(source).toContain('instagram.com/embed.js');
     expect(shop).not.toContain('Instagram + location');
     expect(shop).not.toContain('mapVisual');
     expect(shop).toContain('Ask HappyCake AI');
@@ -48,6 +52,8 @@ describe('public contact, reviews, and shopper helper surfaces', () => {
     expect(shop).not.toContain('visualFlow');
     expect(styles).toContain('.occasionIcon');
     expect(styles).toContain('.instaPost');
+    expect(styles).toContain('.instagram-media');
+    expect(styles).not.toContain("url('/assets/hero/happy-cake-hero-02.webp') center/cover");
   });
 
   it('keeps assistant chat wired to the existing assistant API and channel set to website', () => {
