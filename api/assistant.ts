@@ -76,7 +76,7 @@ const requiredEvents = [
 const endpoint = process.env.HAPPYCAKE_MCP_URL || 'https://www.steppebusinessclub.com/api/mcp';
 const mcpTools = ['square_list_catalog', 'square_get_pos_summary', 'kitchen_get_production_summary', 'evaluator_get_evidence_summary'] as const;
 
-type McpTool = typeof mcpTools[number] | 'marketing_report_to_owner' | 'website_send_reply';
+type McpTool = typeof mcpTools[number] | 'marketing_report_to_owner' | 'website_send_reply' | 'square_create_order' | 'kitchen_create_ticket';
 type McpCall = { ok: boolean; source: 'mcp' | 'simulated'; tool: string; data: Record<string, unknown>; latencyMs: number };
 
 function token() {

@@ -19,10 +19,11 @@ describe('public contact, reviews, and shopper helper surfaces', () => {
     const shop = shopMarkup();
 
     expect(shop).toContain('Latest posts from');
-    expect(source).toContain('className="instaPost"');
-    expect(source).toContain('InstagramEmbed');
-    expect(source).toContain('data-instgrm-permalink');
-    expect(source).toContain('instagram.com/embed.js');
+    expect(source).toContain('className="instaPost instaShot"');
+    expect(source).toContain('InstagramShot');
+    expect(source).toContain('/assets/social/happy-cake-social-03.webp');
+    expect(source).not.toContain('data-instgrm-permalink');
+    expect(source).not.toContain('instagram.com/embed.js');
     expect(shop).not.toContain('Instagram + location');
     expect(shop).not.toContain('mapVisual');
     expect(shop).toContain('Ask HappyCake AI');
@@ -52,7 +53,8 @@ describe('public contact, reviews, and shopper helper surfaces', () => {
     expect(shop).not.toContain('visualFlow');
     expect(styles).toContain('.occasionIcon');
     expect(styles).toContain('.instaPost');
-    expect(styles).toContain('.instagram-media');
+    expect(styles).toContain('.instaShot img');
+    expect(styles).not.toContain('.instagram-media');
     expect(styles).not.toContain("url('/assets/hero/happy-cake-hero-02.webp') center/cover");
   });
 
@@ -80,7 +82,8 @@ describe('public contact, reviews, and shopper helper surfaces', () => {
     expect(profile.googleMaps.phone).toBe('(281) 979-8320');
     expect(profile.reviews.rating).toBe(4.7);
     expect(profile.reviews.items).toHaveLength(3);
-    expect(profile.reviews.items.every((item: { url:string }) => item.url.includes('google.com/maps'))).toBe(true);
+    expect(profile.reviews.items.some((item: { url:string }) => item.url.includes('google.com/maps'))).toBe(true);
+    expect(profile.reviews.items.every((item: { source?:string }) => Boolean(item.source))).toBe(true);
 
     const llms = readFileSync('public/llms.txt', 'utf8');
     expect(llms).toContain('HappyCake');
