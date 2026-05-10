@@ -353,17 +353,7 @@ export default function App() {
         </div>
       </section>
 
-      <section className="funnelMap">
-        {shopTrustPoints.map(point => <article key={point.stage}><small>{point.stage}</small><b>{point.title}</b><p>{point.detail}</p></article>)}
-      </section>
-
-      <section className="promoRail">
-        <button onClick={() => setWheelOpen(true)}><b>Spin the wheel</b><span>5%, 10%, 20%, 50%, or nothing.</span></button>
-        <button onClick={() => featured && startOrder(featured)}><b>Featured cake</b><span>{featured ? `${featured.name} · $${featured.priceUsd}` : 'Pick a classic cake'}</span></button>
-        <button onClick={() => document.getElementById('birthday')?.scrollIntoView({ behavior: 'smooth' })}><b>Birthday discount</b><span>Leave your date and phone for a reminder.</span></button>
-      </section>
-
-      <section className="catalogSection" id="catalog">
+      <section className="catalogSection catalogAfterHero" id="catalog">
         <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Classic cakes, priced clearly.</h2></div><p>Pickup time and availability still get bakery confirmation before the promise goes out.</p></div>
         <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
           <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{p.tags[0]}</span></button>
@@ -371,7 +361,7 @@ export default function App() {
         </article>)}</div>
       </section>
 
-      <section className="orderStage" id="order">
+      {selected && <section className="orderStage" id="order">
         <div className="orderSummary">
           <p className="eyebrow">Order request</p>
           <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
@@ -387,33 +377,13 @@ export default function App() {
           <button className="primary wide" onClick={submitOrder} disabled={loading || !selected}>{loading ? 'Sending order request…' : 'Send order request'}</button>
           <p className="fineprint">Allergens, exact pickup time, and final availability are confirmed by the bakery before fulfillment.</p>
         </div>
-      </section>
+      </section>}
 
       {result && <section className="replyPanel premiumResult">
         <div className="replyDraft"><span className="softBadge">Order request sent</span><h2>Customer reply</h2><p>{cleanShopperText(result.reply)}</p></div>
         <div className="realityBox"><div className="sectionHeader"><h2>What happens next</h2><button className="linkButton" onClick={() => setShowTrail(!showTrail)}>{showTrail ? 'Hide' : 'Show'}</button></div><div className="checkGrid"><span>Menu</span><span>Price</span><span>Pickup</span><span>Confirm</span></div>{showTrail && <ol className="trustTimeline">{result.actions.map((a,i)=><li key={i}><i /> <span><b>{actionLabels[a.type] || 'Checked'}</b><small>{cleanShopperText(a.detail)}</small></span></li>)}</ol>}</div>
       </section>}
 
-      <section className="birthdayClub" id="birthday">
-        <div>
-          <p className="eyebrow">Birthday cake reminder</p>
-          <h2>Get a birthday cake discount before your day.</h2>
-          <p>Leave your phone and birthday. HappyCake will send one reminder near your birthday with a cake discount, so you do not have to remember at the last minute.</p>
-        </div>
-        <div className="birthdayForm">
-          <label>Name <input value={birthdayName} onChange={e => setBirthdayName(e.target.value)} placeholder="Optional" /></label>
-          <label>Phone <input value={birthdayPhone} onChange={e => setBirthdayPhone(e.target.value)} placeholder="(832) 555-0101" inputMode="tel" /></label>
-          <label>Birthday <input value={birthdayDate} onChange={e => setBirthdayDate(e.target.value)} type="date" /></label>
-          <label className="consentLine"><input type="checkbox" checked={birthdayConsent} onChange={e => setBirthdayConsent(e.target.checked)} /> Text me a birthday cake reminder and discount.</label>
-          <button className="primary wide" onClick={submitBirthdayReminder} disabled={birthdayLoading || !birthdayPhone || !birthdayDate}>{birthdayLoading ? 'Saving reminder…' : 'Save my birthday reminder'}</button>
-          {birthdayStatus && <p className="birthdayStatus">{birthdayStatus}</p>}
-        </div>
-      </section>
-
-      <section className="marketingSection">
-        <div><p className="eyebrow">Why order here</p><h2>Simple cake buying, not back-and-forth guessing.</h2></div>
-        <div className="hookGrid"><article><b>Clear menu</b><p>See flavor, size, serving estimate, and price before you message.</p></article><article><b>Private discount</b><p>Spin, leave your contact, and get an individual checkout code if you win.</p></article><article><b>Human confirmation</b><p>Pickup time, availability, and special notes are confirmed before fulfillment.</p></article></div>
-      </section>
     </>}
 
     {view === 'owner' && <>

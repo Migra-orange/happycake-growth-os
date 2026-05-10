@@ -28,4 +28,17 @@ describe('public shop copy', () => {
     expect(customerFacing).not.toMatch(/Sandbox proof/i);
     expect(customerFacing).not.toMatch(/\bPOS\b/);
   });
+
+  it('moves shoppers from hero straight into the cake menu and avoids extra form sections', () => {
+    const shop = shopMarkup();
+    const heroEnd = shop.indexOf('</section>');
+    const afterHero = shop.slice(heroEnd + '</section>'.length).trimStart();
+
+    expect(afterHero.startsWith('<section className="catalogSection catalogAfterHero"')).toBe(true);
+    expect(shop).not.toContain('className="funnelMap"');
+    expect(shop).not.toContain('className="promoRail"');
+    expect(shop).not.toContain('className="birthdayClub"');
+    expect(shop).not.toContain('className="marketingSection"');
+    expect(shop).toContain('{selected && <section className="orderStage"');
+  });
 });
