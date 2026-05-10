@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { get as blobGet, put as blobPut } from '@vercel/blob';
 
 type StoredApprovalStatus = 'pending' | 'approved' | 'rejected' | 'clarification_requested' | 'scheduled';
 type StoredApprovalRecord = { approvalId:string; intentId:string; customer:string; status:StoredApprovalStatus; summary:string; riskFlags:string[]; policyDecision:string; proposedSideEffects:string[]; createdAt:string; expiresAt:string; decisionAt?:string; decisionSource?:'telegram'|'dashboard'|'demo'|'api'; decisionNote?:string; executedSideEffects:string[] };
@@ -17,15 +18,37 @@ function approveRecord(store: ApprovalStore, approvalIdOrIntentId: string, execu
 function rejectRecord(store: ApprovalStore, approvalIdOrIntentId: string, note = '', source: StoredApprovalRecord['decisionSource'] = 'api') { const record = findApproval(store, approvalIdOrIntentId); if (!record) throw new Error('approval_not_found'); if (record.status === 'approved') return { ...record, decisionNote: record.decisionNote || 'already_approved' }; if (record.status === 'rejected') return { ...record, decisionNote: record.decisionNote || 'already_rejected' }; record.status = 'rejected'; record.decisionAt = new Date().toISOString(); record.decisionSource = source; record.decisionNote = note; return record; }
 function approvalExpiresIn(record: Pick<StoredApprovalRecord, 'expiresAt'>, now = new Date()) { const remainingMs = new Date(record.expiresAt).getTime() - now.getTime(); if (remainingMs <= 0) return 'expired'; const minutes = Math.ceil(remainingMs / 60000); if (minutes < 60) return `${minutes}m`; const hours = Math.floor(minutes / 60); const rest = minutes % 60; return rest ? `${hours}h ${rest}m` : `${hours}h`; }
 function seedDemoApprovals(store: ApprovalStore, now = new Date()) { if (store.records.length > 0) return store; upsertApprovalRecord(store, { approvalId:'queue_live_owner_001', intentId:'intent_pending_honey_office', customer:'Website customer', status:'pending', riskFlags:['same_day'], policyDecision:'require_owner_approval', summary:'cake "Honey" for today after work. Side effects blocked until owner approval.', proposedSideEffects:['square_create_order','kitchen_create_ticket'], createdAt:now.toISOString(), expiresAt:new Date(now.getTime()+1000*60*60*3).toISOString() }); upsertApprovalRecord(store, { approvalId:'queue_retention_002', intentId:'intent_comeback_card', customer:'Previous office buyer', status:'scheduled', riskFlags:[], policyDecision:'allow_followup', summary:'Retention agent will send a comeback reminder for the next office birthday.', proposedSideEffects:['schedule_followup'], createdAt:now.toISOString(), expiresAt:new Date(now.getTime()+1000*60*60*24).toISOString() }); return store; }
-function getApprovalStore() { const globalStore = globalThis as GlobalWithApprovalStore; if (!globalStore.__happycakeApprovalStore) { globalStore.__happycakeApprovalStore = seedDemoApprovals(createEmptyApprovalStore()); } return globalStore.__happycakeApprovalStore; }
+const approvalBlobPath = 'happycake/owner-approval-store.json';
+function memoryApprovalStore() { const globalStore = globalThis as GlobalWithApprovalStore; if (!globalStore.__happycakeApprovalStore) { globalStore.__happycakeApprovalStore = seedDemoApprovals(createEmptyApprovalStore()); } return globalStore.__happycakeApprovalStore; }
+async function getApprovalStore() {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return memoryApprovalStore();
+  try {
+    const result = await blobGet(approvalBlobPath, { access: 'private', useCache: false });
+    if (!result || result.statusCode !== 200 || !result.stream) return memoryApprovalStore();
+    const text = await new Response(result.stream).text();
+    const parsed = JSON.parse(text) as ApprovalStore;
+    const globalStore = globalThis as GlobalWithApprovalStore;
+    globalStore.__happycakeApprovalStore = parsed.records?.length ? parsed : seedDemoApprovals(createEmptyApprovalStore());
+    return globalStore.__happycakeApprovalStore;
+  } catch { return memoryApprovalStore(); }
+}
+async function saveApprovalStore(store: ApprovalStore) {
+  const globalStore = globalThis as GlobalWithApprovalStore;
+  globalStore.__happycakeApprovalStore = store;
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return false;
+  try {
+    await blobPut(approvalBlobPath, JSON.stringify(store), { access: 'private', allowOverwrite: true, contentType: 'application/json', cacheControlMaxAge: 60 });
+    return true;
+  } catch { return false; }
+}
 
 
-function ensureApprovalRecord(body: any, intentId: string) {
+async function ensureApprovalRecord(body: any, intentId: string) {
   const approvalId = String(body?.approvalId || intentId);
-  const store = getApprovalStore();
+  const store = await getApprovalStore();
   const found = findApproval(store, approvalId) || findApproval(store, intentId);
-  if (found) return found;
-  return upsertApprovalRecord(store, {
+  if (found) return { store, approval: found };
+  const approval = upsertApprovalRecord(store, {
     approvalId,
     intentId,
     customer: String(body?.customer || 'Website customer'),
@@ -37,6 +60,8 @@ function ensureApprovalRecord(body: any, intentId: string) {
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString()
   });
+  await saveApprovalStore(store);
+  return { store, approval };
 }
 
 const endpoint = process.env.HAPPYCAKE_MCP_URL || 'https://www.steppebusinessclub.com/api/mcp';
@@ -86,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const rejected = action.includes('reject');
 
   try {
-    const approval = ensureApprovalRecord(req.body, intentId);
+    const { store, approval } = await ensureApprovalRecord(req.body, intentId);
     const mcpCalls = rejected
       ? [await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'rejected', note: req.body?.note || '' })]
       : [
@@ -95,8 +120,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await callMcp('kitchen_create_ticket', { intentId, approvalId: approval.approvalId, approvedBy: 'owner_telegram' })
       ];
     const decidedApproval = rejected
-      ? rejectRecord(getApprovalStore(), approval.approvalId, String(req.body?.note || ''), 'telegram')
-      : approveRecord(getApprovalStore(), approval.approvalId, mcpCalls.map((call) => call.tool), 'telegram');
+      ? rejectRecord(store, approval.approvalId, String(req.body?.note || ''), 'telegram')
+      : approveRecord(store, approval.approvalId, mcpCalls.map((call) => call.tool), 'telegram');
+    await saveApprovalStore(store);
 
     return res.status(200).json({
       ok: true,
