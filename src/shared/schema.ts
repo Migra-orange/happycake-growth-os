@@ -104,7 +104,11 @@ export type OwnerApproval = z.infer<typeof OwnerApprovalSchema>;
 
 export const AssistantResponseSchema = z.object({
   mode: z.enum(['live', 'simulated']),
-  runtime: z.literal('claude-code-cli'),
+  runtime: z.literal('claude-code-cli').optional(),
+  localRuntime: z.literal('claude-code-cli').optional(),
+  productionRuntime: z.literal('vercel_serverless_mcp_demo').optional(),
+  claudeCliProductionExecuted: z.boolean().optional(),
+  localProofPath: z.string().optional(),
   usedFallback: z.boolean(),
   reply: z.string(),
   actions: z.array(ActionSchema),

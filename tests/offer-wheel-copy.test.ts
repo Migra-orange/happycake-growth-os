@@ -2,13 +2,17 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 describe('offer wheel discounts', () => {
-  it('uses clear percentage discount slices plus a nothing slice', () => {
+  it('uses one modest discount slice plus non-guaranteed planning perks', () => {
     const source = readFileSync('src/web/App.tsx', 'utf8');
     const offerStart = source.indexOf('const offers: Offer[]');
     const offerBlock = source.slice(offerStart, source.indexOf('const shopTrustPoints', offerStart));
 
-    for (const label of ['5% off', '10% off', '20% off', '50% off', 'Nothing']) {
+    for (const label of ['5% off', 'Reminder', 'Fast callback', 'Cake guide', 'Nothing']) {
       expect(offerBlock).toContain(label);
+    }
+
+    for (const removedHighValue of ['10% off', '20% off', '50% off']) {
+      expect(offerBlock).not.toContain(removedHighValue);
     }
 
     for (const oldLabel of ['$5 off today', 'Free candles', 'Gift note', 'Priority request']) {

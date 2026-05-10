@@ -14,7 +14,7 @@
     },
     "localFallback": "deterministic simulator for credential-free local clone"
   },
-  "verticalSlice": "Local Campaign → Instagram/WhatsApp Lead → AI Sales → POS/Kitchen Handoff → Owner Telegram → Evidence Log",
+  "verticalSlice": "Local Campaign → Instagram/WhatsApp Lead → AI Sales → Owner Telegram Approval → POS/Kitchen Handoff → Evidence Log",
   "capabilities": [
     "selling_storefront",
     "agent_readable_catalog",

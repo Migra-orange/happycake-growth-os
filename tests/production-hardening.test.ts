@@ -89,13 +89,34 @@ describe('production hardening gates', () => {
     expect(smoke).toContain('mcp_token_missing');
   });
 
-  it('labels Vercel health as a serverless MCP demo without over-claiming Claude CLI execution', () => {
+  it('labels Vercel health and assistant responses as serverless MCP demo without over-claiming Claude CLI execution', () => {
     const health = read('api/health.ts');
+    const assistant = read('api/assistant.ts');
 
     expect(health).toContain("localRuntime: 'claude-code-cli'");
     expect(health).toContain("productionRuntime: 'vercel_serverless_mcp_demo'");
     expect(health).toContain('claudeCliProductionExecuted: false');
     expect(health).toContain("localProofPath: 'src/server/assistant.ts'");
+    expect(assistant).toContain("localRuntime: 'claude-code-cli'");
+    expect(assistant).toContain("productionRuntime: 'vercel_serverless_mcp_demo'");
+    expect(assistant).toContain('claudeCliProductionExecuted: false');
+    expect(assistant).not.toContain("runtime: 'claude-code-cli'");
+  });
+
+  it('keeps the manifest vertical slice owner-approval-first before POS/kitchen handoff', () => {
+    const manifest = JSON.parse(read('public/agent-manifest.json')) as { verticalSlice: string };
+
+    expect(manifest.verticalSlice).toContain('Owner Telegram Approval');
+    expect(manifest.verticalSlice.indexOf('Owner Telegram Approval')).toBeLessThan(manifest.verticalSlice.indexOf('POS/Kitchen Handoff'));
+  });
+
+  it('does not present high-value public discounts as guaranteed checkout savings', () => {
+    const app = read('src/web/App.tsx');
+
+    expect(app).not.toContain('50% off');
+    expect(app).not.toContain('Use it at checkout to get');
+    expect(app).toContain('bakery-confirmed checkout');
+    expect(app).toContain('bakery confirms the offer');
   });
 
   it('requires live MCP side-effect acknowledgements before recording owner side effects', () => {

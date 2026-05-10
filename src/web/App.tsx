@@ -26,9 +26,9 @@ function isOwnerRoute(hash = '', search = '') {
 
 const offers: Offer[] = [
   { label: '5% off', value: 'Take 5% off your cake request', code: 'CAKE5', angle: 'discount', discountPercent: 5 },
-  { label: '10% off', value: 'Take 10% off your cake request', code: 'CAKE10', angle: 'discount', discountPercent: 10 },
-  { label: '20% off', value: 'Take 20% off your cake request', code: 'CAKE20', angle: 'discount', discountPercent: 20 },
-  { label: '50% off', value: 'Take 50% off your cake request', code: 'CAKE50', angle: 'discount', discountPercent: 50 },
+  { label: 'Reminder', value: 'Get a birthday reminder before your next cake moment', code: 'REMINDER', angle: 'none' },
+  { label: 'Fast callback', value: 'Ask the bakery to prioritize your reply window', code: 'CALLBACK', angle: 'none' },
+  { label: 'Cake guide', value: 'Get serving-size help before you send the request', code: 'GUIDE', angle: 'none' },
   { label: 'Nothing', value: 'No discount this spin — you can still send your cake request', code: 'NO-DISCOUNT', angle: 'none' }
 ];
 
@@ -407,7 +407,7 @@ export default function App() {
         <button className="closeOffer" onClick={() => { setWheelOpen(false); localStorage.setItem('happycake-offer-seen', '1'); }} aria-label="Close offer">×</button>
         <p className="eyebrow">Before you choose</p>
         <h2>Spin for today’s cake discount.</h2>
-        <p className="offerLead">Win 5%, 10%, 20%, 50% off — or land on nothing. One quick spin before you request your cake.</p>
+        <p className="offerLead">Win a 5% bakery-confirmed discount or a helpful cake-planning perk. One quick spin before you request your cake.</p>
         <div className="wheelWrap">
           <div className="wheelPointer" aria-hidden="true" />
           <button
@@ -420,14 +420,14 @@ export default function App() {
             <b>{spinning ? 'Spinning…' : offer ? offer.label : 'SPIN'}</b>
           </button>
         </div>
-        {offer && offer.angle === 'none' && <div className="wonOffer emptyOffer"><small>Result</small><strong>Nothing</strong><p>{offer.value}. You can still choose a cake now.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
+        {offer && offer.angle === 'none' && <div className="wonOffer emptyOffer"><small>Result</small><strong>{offer.label}</strong><p>{offer.value}. You can still choose a cake now.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
         {offer && offer.angle === 'discount' && <div className="wonOffer claimOffer"><small>You won</small><strong>{offer.label}</strong><p>Where should we send it? Add your name and phone or email to receive your individual checkout code.</p>
           {!promoClaim ? <div className="claimForm">
             <label>Name <input value={promoName} onChange={e => setPromoName(e.target.value)} placeholder="Your name" /></label>
             <label>Phone <input value={promoPhone} onChange={e => setPromoPhone(e.target.value)} placeholder="(832) 555-0101" inputMode="tel" /></label>
             <label>Email <input value={promoEmail} onChange={e => setPromoEmail(e.target.value)} placeholder="you@example.com" inputMode="email" /></label>
             <button className="primary wide" onClick={claimDiscountCode} disabled={promoLoading || !promoName.trim() || (!promoPhone.trim() && !promoEmail.trim())}>{promoLoading ? 'Sending code…' : 'Send my code'}</button>
-          </div> : <div className="promoCodeBox"><small>Your individual code</small><strong>{promoClaim.promoCode}</strong><p>Use it at checkout to get {promoClaim.discountPercent}% off.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
+          </div> : <div className="promoCodeBox"><small>Your individual code</small><strong>{promoClaim.promoCode}</strong><p>Show this code when the bakery confirms the offer for checkout.</p><button className="primary" onClick={() => setWheelOpen(false)}>Shop cakes</button></div>}
           {promoStatus && <p className="birthdayStatus">{promoStatus}</p>}
         </div>}
       </div>
@@ -464,7 +464,7 @@ export default function App() {
 
       <section className="catalogSection catalogAfterHero" id="catalog">
          <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Shop the cake case.</h2></div><p>Browse best-selling cakes by size and serving guide. Send a pickup request and the bakery will confirm current pricing, availability, and pickup timing before anything is finalized.</p></div>
-        <div className="categoryBar" aria-label="Cake shopping categories"><span>Best sellers</span><span>Birthday</span><span>Office</span><span>Gift</span><button onClick={() => setWheelOpen(true)}>5–50% discount wheel</button></div>
+        <div className="categoryBar" aria-label="Cake shopping categories"><span>Best sellers</span><span>Birthday</span><span>Office</span><span>Gift</span><button onClick={() => setWheelOpen(true)}>5% discount wheel</button></div>
         <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
           <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{i === 0 ? 'Most loved' : p.tags[0]}</span></button>
           <div className="cakeInfo"><div><small>{p.tags.slice(0, 2).join(' · ')}</small><h3>{p.shortName || p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>Bakery confirms current price</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" type="button" onClick={() => startOrder(p)}>Order this cake</button></div>
@@ -476,7 +476,7 @@ export default function App() {
           <p className="eyebrow">Order request</p>
           <h2>{selected ? selected.name : 'Choose a cake to start.'}</h2>
           {selected ? <><img src={selected.image} alt={selected.name}/><div className="priceLine"><b>Bakery confirms current price</b><span>{selected.weight} · {selected.serves}</span></div></> : featured ? <><img src={featured.image} alt={featured.name}/><div className="priceLine"><b>Choose a cake above</b><span>We’ll prepare your pickup request here.</span></div></> : <p>Select any cake above. We’ll prepare your request and ask the bakery to confirm details before anything is finalized.</p>}
-          {promoClaim && <div className="offerApplied"><b>{promoClaim.promoCode}</b><span>{promoClaim.discountPercent}% off saved for bakery-confirmed checkout</span></div>}
+          {promoClaim && <div className="offerApplied"><b>{promoClaim.promoCode}</b><span>{promoClaim.discountPercent}% off saved for bakery-confirmed checkout; bakery confirms the offer before fulfillment</span></div>}
         </div>
         <div className="orderForm">
           <label>Your name <input value={name} onChange={e=>setName(e.target.value)} placeholder="Optional" /></label>

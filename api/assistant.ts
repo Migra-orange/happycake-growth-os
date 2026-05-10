@@ -221,7 +221,10 @@ async function runFlow(body: any) {
 
   return {
     mode: mcpChecks.every((c) => c.source === 'mcp') ? 'live' : 'simulated',
-    runtime: 'claude-code-cli',
+    localRuntime: 'claude-code-cli',
+    productionRuntime: 'vercel_serverless_mcp_demo',
+    claudeCliProductionExecuted: false,
+    localProofPath: 'src/server/assistant.ts',
     usedFallback: mcpChecks.some((c) => c.source !== 'mcp'),
     evidenceId,
     guardrails,
