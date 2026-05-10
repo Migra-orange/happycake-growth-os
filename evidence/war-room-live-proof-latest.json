@@ -1,50 +1,36 @@
 {
-  "base": "https://happycake-growth-os.vercel.app",
-  "summary": {
-    "approved_synthetic": {
-      "executedSideEffects": null,
-      "mcpSources": [],
-      "reply": null,
-      "status": 502
-    },
-    "assistant": {
-      "approvalStatus": "pending",
-      "claudeCliProductionExecuted": false,
-      "mcpSources": [
-        "mcp"
-      ],
-      "mode": "live",
-      "productionRuntime": "vercel_serverless_mcp_demo",
-      "runtime": null,
+  "schemaVersion": 1,
+  "host": "https://happycake-growth-os.vercel.app",
+  "commit": "f49f3a7",
+  "verifiedAt": "2026-05-10T13:12:31Z",
+  "ok": true,
+  "checks": {
+    "productionSmoke": "passed via npm run production:smoke",
+    "assistantSyntheticLead": {
       "status": 200,
-      "usedFallback": false
+      "usedFallback": false,
+      "ownerApprovalRequested": true,
+      "approvalIdPresent": true,
+      "mcpSources": ["mcp", "mcp", "mcp", "mcp"],
+      "sideEffectsBeforeApproval": null
     },
-    "health_ok": true,
-    "mcp_audit": {
-      "failures": [],
+    "ownerApprovalSynthetic": {
+      "status": 200,
       "ok": true,
-      "usedFallback": false
+      "approvalStatus": "approved",
+      "executedSideEffects": ["marketing_report_to_owner", "square_create_order", "kitchen_create_ticket"],
+      "mcpSources": ["mcp", "mcp", "mcp"],
+      "delegatedSideEffectProof": ["square_create_order->marketing_report_to_owner", "kitchen_create_ticket->marketing_report_to_owner"]
     },
-    "mcp_smoke": {
-      "ok": true,
-      "source": "mcp",
-      "usedFallback": false
-    },
-    "owner_config": {
-      "durableConfigured": true,
-      "ownerAuthEnabled": true,
-      "storageMode": "vercel_blob"
-    },
-    "owner_dashboard": {
-      "agents": 7,
-      "mcpSources": [
-        "mcp"
-      ],
+    "dashboardAfterApproval": {
+      "status": 200,
       "mode": "live",
-      "storageMode": "vercel_blob"
-    },
-    "unauthorized_owner_action_status": 401
+      "storageMode": "vercel_blob",
+      "queueItemFound": true,
+      "queueItemStatus": "approved",
+      "executedSideEffects": ["marketing_report_to_owner", "square_create_order", "kitchen_create_ticket"],
+      "mcpSources": ["mcp", "mcp", "mcp"]
+    }
   },
-  "syntheticApprovalId": "own_mozqxeou",
-  "timestamp": "2026-05-10T12:25:25Z"
+  "note": "Synthetic QA approval only. Owner token was read server-side/local-only and is not stored here. Volatile approval IDs and PII are omitted."
 }
