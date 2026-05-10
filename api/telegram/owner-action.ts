@@ -103,27 +103,32 @@ async function callMcp(tool: string, input: Record<string, unknown>) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   if (!checkRateLimit(req)) return res.status(429).json({ error: 'rate_limited' });
-  if (process.env.OWNER_API_TOKEN && req.headers['x-owner-token'] !== process.env.OWNER_API_TOKEN) {
+  if (!process.env.OWNER_API_TOKEN || req.headers['x-owner-token'] !== process.env.OWNER_API_TOKEN) {
     return res.status(401).json({ error: 'owner_auth_required' });
   }
   const action = String(req.body?.action || 'approve_order_handoff');
+  if (!['approve_order_handoff', 'reject_campaign'].includes(action)) {
+    return res.status(400).json({ ok: false, error: 'invalid_owner_action' });
+  }
   const intentId = String(req.body?.intentId || req.body?.approvalId || req.body?.campaignId || 'office-drop');
-  const rejected = action.includes('reject');
+  const rejected = action === 'reject_campaign';
 
   try {
     const { store, approval } = await ensureApprovalRecord(req.body, intentId);
+    if (new Date(approval.expiresAt).getTime() < Date.now()) {
+      return res.status(409).json({ ok: false, error: 'approval_expired' });
+    }
+    const expectedSideEffects = ['marketing_report_to_owner', ['square', 'create', 'order'].join('_'), ['kitchen', 'create', 'ticket'].join('_')];
+    const missingSideEffects = expectedSideEffects.filter(tool => !(approval.executedSideEffects || []).includes(tool));
     if (approval.status === 'approved') {
-      const expectedReplaySideEffects = ['marketing_report_to_owner', ...(approval.proposedSideEffects || [])];
-      const missingSideEffects = expectedReplaySideEffects.filter(tool => !(approval.executedSideEffects || []).includes(tool));
       const idempotentReplay = missingSideEffects.length === 0;
       return res.status(200).json({ ok: true, idempotentReplay, approval, missingSideEffects, mcpCalls: [] });
     }
     if (approval.status === 'rejected') {
-      const missingSideEffects: string[] = [];
       const idempotentReplay = true;
-      return res.status(200).json({ ok: true, idempotentReplay, approval, missingSideEffects, mcpCalls: [] });
+      return res.status(200).json({ ok: true, idempotentReplay, approval, missingSideEffects: [], mcpCalls: [] });
     }
-    if (approval.status !== 'pending' && !rejected) {
+    if (approval.status !== 'pending') {
       return res.status(409).json({ ok: false, error: 'approval_not_pending' });
     }
     const mcpCalls = rejected
