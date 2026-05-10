@@ -30,15 +30,20 @@ describe('production hardening gates', () => {
     expect(assistant).toContain('ownerDelivery');
   });
 
-  it('makes owner side effects idempotent before calling MCP side-effect tools', () => {
+  it('durably records owner decisions before calling MCP side-effect tools', () => {
     const ownerAction = read('api/telegram/owner-action.ts');
 
     expect(ownerAction).toContain('idempotentReplay');
     expect(ownerAction).toContain("approval.status === 'approved'");
     expect(ownerAction).toContain("approval.status === 'rejected'");
     const handlerSection = ownerAction.slice(ownerAction.indexOf('export default async function handler'));
-    expect(handlerSection.indexOf("approval.status === 'approved'")).toBeLessThan(handlerSection.indexOf("square_create_order"));
+    expect(handlerSection.indexOf("approval.status === 'approved'")).toBeLessThan(handlerSection.indexOf('const mcpCalls = rejected'));
     expect(handlerSection).toContain('missingSideEffects');
+    expect(handlerSection).toContain('decisionSavedBeforeSideEffects');
+    expect(handlerSection.indexOf('decisionSavedBeforeSideEffects')).toBeLessThan(handlerSection.indexOf('const mcpCalls = rejected'));
+    expect(handlerSection.indexOf('approval_persistence_failed')).toBeLessThan(handlerSection.indexOf('const mcpCalls = rejected'));
+    expect(handlerSection).toContain('runMissingApprovedSideEffects(approval, missingSideEffects)');
+    expect(handlerSection).toContain('idempotencyKey');
   });
 
   it('sanitizes customer-provided names before storing approval records', () => {

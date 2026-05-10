@@ -120,9 +120,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const expectedSideEffects = ['marketing_report_to_owner', ['square', 'create', 'order'].join('_'), ['kitchen', 'create', 'ticket'].join('_')];
     const missingSideEffects = expectedSideEffects.filter(tool => !(approval.executedSideEffects || []).includes(tool));
+    const runMissingApprovedSideEffects = async (record: StoredApprovalRecord, tools: string[]) => {
+      const mcpCalls = [] as Awaited<ReturnType<typeof callMcp>>[];
+      for (const tool of tools) {
+        const call = await callMcp(tool, { intentId: record.intentId, approvalId: record.approvalId, approvedBy: 'owner_telegram', idempotencyKey: `${record.approvalId}:${tool}` });
+        mcpCalls.push(call);
+        record.executedSideEffects = Array.from(new Set([...(record.executedSideEffects || []), call.tool]));
+        const savedSideEffect = await saveApprovalStore(store);
+        if (!savedSideEffect) throw new Error('side_effect_persistence_failed');
+      }
+      return mcpCalls;
+    };
     if (approval.status === 'approved') {
+      const replayedMcpCalls = missingSideEffects.length ? await runMissingApprovedSideEffects(approval, missingSideEffects) : [];
       const idempotentReplay = missingSideEffects.length === 0;
-      return res.status(200).json({ ok: true, idempotentReplay, approval, missingSideEffects, mcpCalls: [] });
+      return res.status(200).json({ ok: true, idempotentReplay, approval, missingSideEffects, mcpCalls: replayedMcpCalls });
     }
     if (approval.status === 'rejected') {
       const idempotentReplay = true;
@@ -131,18 +143,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (approval.status !== 'pending') {
       return res.status(409).json({ ok: false, error: 'approval_not_pending' });
     }
-    const mcpCalls = rejected
-      ? [await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'rejected', note: req.body?.note || '' })]
-      : [
-        await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'approved', note: req.body?.note || '' }),
-        await callMcp('square_create_order', { intentId, approvalId: approval.approvalId, approvedBy: 'owner_telegram' }),
-        await callMcp('kitchen_create_ticket', { intentId, approvalId: approval.approvalId, approvedBy: 'owner_telegram' })
-      ];
     const decidedApproval = rejected
       ? rejectRecord(store, approval.approvalId, String(req.body?.note || ''), 'telegram')
-      : approveRecord(store, approval.approvalId, mcpCalls.map((call) => call.tool), 'telegram');
-    const saved = await saveApprovalStore(store);
-    if (!saved) return res.status(502).json({ ok: false, error: 'approval_persistence_failed' });
+      : approveRecord(store, approval.approvalId, [], 'telegram');
+    const decisionSavedBeforeSideEffects = await saveApprovalStore(store);
+    if (!decisionSavedBeforeSideEffects) return res.status(502).json({ ok: false, error: 'approval_persistence_failed' });
+
+    const mcpCalls = rejected
+      ? [await callMcp('marketing_report_to_owner', { intentId, approvalId: approval.approvalId, action: 'rejected', note: req.body?.note || '', idempotencyKey: `${approval.approvalId}:marketing_report_to_owner` })]
+      : await runMissingApprovedSideEffects(decidedApproval, expectedSideEffects);
 
     return res.status(200).json({
       ok: true,
