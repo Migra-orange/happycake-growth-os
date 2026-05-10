@@ -4,7 +4,24 @@
   "instagram": {
     "handle": "@happycake.us",
     "url": "https://www.instagram.com/happycake.us/",
-    "label": "Instagram"
+    "label": "Instagram",
+    "posts": [
+      {
+        "title": "Latest reel",
+        "url": "https://www.instagram.com/happycake.us/reel/DWVzB3_GOJ_/",
+        "note": "Open on Instagram"
+      },
+      {
+        "title": "Cake reel",
+        "url": "https://www.instagram.com/reel/DXNImvmki_N/",
+        "note": "Open on Instagram"
+      },
+      {
+        "title": "Bakery reel",
+        "url": "https://www.instagram.com/reel/DXGdcJNjqxs/",
+        "note": "Open on Instagram"
+      }
+    ]
   },
   "googleMaps": {
     "label": "Happy Cake on Google Maps",
@@ -24,19 +41,22 @@
     "countLabel": "Google rating",
     "items": [
       {
-        "label": "Cake shop",
+        "label": "Latest Google review",
         "rating": 4.7,
-        "text": "4.7-star public Google Maps rating."
+        "text": "Open the newest public review on Google Maps.",
+        "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX"
       },
       {
-        "label": "Local proof",
+        "label": "Recent Google review",
         "rating": 4.7,
-        "text": "Address, phone, website, and recent local post are visible on Google Maps."
+        "text": "See the latest customer notes directly on Maps.",
+        "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX"
       },
       {
-        "label": "Fresh check",
+        "label": "More Google reviews",
         "rating": 4.7,
-        "text": "Latest review text stays on Google Maps to avoid stale or fake quotes."
+        "text": "Read more public Google reviews for Happy Cake.",
+        "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX"
       }
     ]
   },

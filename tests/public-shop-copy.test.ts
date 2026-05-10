@@ -52,8 +52,9 @@ describe('public shop copy', () => {
     expect(shop).toContain('Shop the cake case.');
     expect(shop).toContain('Best sellers');
     expect(shop).toContain('Pick by moment, not just flavor.');
-    expect(shop).toContain('How ordering works');
-    expect(shop).toContain('Three calm steps.');
+    expect(shop).toContain('occasionIcon');
+    expect(shop).not.toContain('How ordering works');
+    expect(shop).not.toContain('Three calm steps.');
     expect(shop).toContain('Spin for a discount');
     expect(source).not.toContain('setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }');
   });

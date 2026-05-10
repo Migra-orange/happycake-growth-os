@@ -14,16 +14,19 @@ function shopMarkup() {
 }
 
 describe('public contact, reviews, and shopper helper surfaces', () => {
-  it('adds Instagram, assistant chat, and Google review/location proof to the buyer page', () => {
+  it('adds Instagram posts, always-open assistant chat, and clickable Google review/detail proof', () => {
     const shop = shopMarkup();
 
-    expect(shop).toContain('Instagram');
+    expect(shop).toContain('Latest posts from');
+    expect(shop).toContain('instaPost');
+    expect(shop).not.toContain('Instagram + location');
+    expect(shop).not.toContain('mapVisual');
     expect(shop).toContain('Ask HappyCake AI');
-    expect(shop).toContain('Google rating');
+    expect(shop).not.toContain('Open chat');
+    expect(shop).toContain('Google ratings');
     expect(shop).toContain('4.7');
-    expect(shop).toContain('350 Promenade Wy #500');
-    expect(shop).toContain('(281) 979-8320');
-    expect(shop).toContain('Open Google Maps');
+    expect(shop).toContain('Open review');
+    expect(shop).toContain('tel:+12819798320');
   });
 
   it('removes agent-readable UI from the public buyer page while keeping machine files public', () => {
@@ -36,16 +39,15 @@ describe('public contact, reviews, and shopper helper surfaces', () => {
     expect(existsSync('public/agent-manifest.json')).toBe(true);
   });
 
-  it('turns text-heavy lower blocks into animated visual modules', () => {
-    const source = appSource();
+  it('keeps occasion cards visual with themed icons and removes the old ordering explainer section', () => {
     const styles = readFileSync('src/web/styles.css', 'utf8');
     const shop = shopMarkup();
 
-    expect(shop).toContain('visualFlow');
-    expect(shop).toContain('motionStack');
-    expect(shop).toContain('reviewOrbit');
-    expect(styles).toContain('@keyframes floatCake');
-    expect(styles).toContain('@keyframes pulsePath');
+    expect(shop).toContain('occasionIcon');
+    expect(shop).not.toContain('How ordering works');
+    expect(shop).not.toContain('visualFlow');
+    expect(styles).toContain('.occasionIcon');
+    expect(styles).toContain('.instaPost');
   });
 
   it('keeps assistant chat wired to the existing assistant API and channel set to website', () => {
@@ -58,18 +60,21 @@ describe('public contact, reviews, and shopper helper surfaces', () => {
     expect(source).toContain("source: 'happycake-onsite-chat'");
   });
 
-  it('ships public profile with Google Maps metadata and llms.txt for direct machine access', () => {
+  it('ships public profile with Instagram post URLs, Google Maps metadata, and llms.txt', () => {
     expect(existsSync('public/data/business-profile.json')).toBe(true);
     expect(existsSync('public/llms.txt')).toBe(true);
 
     const profile = JSON.parse(readFileSync('public/data/business-profile.json', 'utf8'));
     expect(profile.brand).toBe('HappyCake');
     expect(profile.instagram.url).toMatch(/^https:\/\/www\.instagram\.com\//);
+    expect(profile.instagram.posts).toHaveLength(3);
+    expect(profile.instagram.posts[0].url).toMatch(/instagram\.com/);
     expect(profile.googleMaps.searchUrl).toContain('google.com/maps');
     expect(profile.googleMaps.address).toContain('350 Promenade Wy #500');
     expect(profile.googleMaps.phone).toBe('(281) 979-8320');
     expect(profile.reviews.rating).toBe(4.7);
-    expect(profile.reviews.source).toMatch(/google/i);
+    expect(profile.reviews.items).toHaveLength(3);
+    expect(profile.reviews.items.every((item: { url:string }) => item.url.includes('google.com/maps'))).toBe(true);
 
     const llms = readFileSync('public/llms.txt', 'utf8');
     expect(llms).toContain('HappyCake');

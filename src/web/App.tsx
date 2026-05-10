@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import type { AssistantResponse } from '../shared/schema';
 
 type Product = { id:string; name:string; shortName:string; priceUsd:number; weight:string; serves:string; availabilityPolicy:string; tags:string[]; image:string; description:string };
-type BusinessProfile = { brand:string; locality:string; instagram:{ handle:string; url:string; label:string }; googleMaps:{ label:string; searchUrl:string; status:string; address:string; phone:string; website:string; plusCode:string; ownerPost?:string }; reviews:{ source:string; status:string; summary:string; rating:number; countLabel:string; items:{ label:string; text:string; rating:number }[] }; agentReadable:{ llmsTxt:string; manifest:string; catalog:string; assistant:string } };
+type BusinessProfile = { brand:string; locality:string; instagram:{ handle:string; url:string; label:string; posts:{ title:string; url:string; note:string }[] }; googleMaps:{ label:string; searchUrl:string; status:string; address:string; phone:string; website:string; plusCode:string; ownerPost?:string }; reviews:{ source:string; status:string; summary:string; rating:number; countLabel:string; items:{ label:string; text:string; rating:number; url:string }[] }; agentReadable:{ llmsTxt:string; manifest:string; catalog:string; assistant:string } };
 type ChatMessage = { role:'visitor' | 'assistant'; text:string };
 type GrowthModel = { campaigns:{id:string;name:string;budgetUsd:number;channels:string[];promise:string;kpi:string}[] };
 type Channel = 'website' | 'instagram' | 'whatsapp';
@@ -24,16 +24,10 @@ const offers: Offer[] = [
   { label: 'Nothing', value: 'No discount this spin — you can still send your cake request', code: 'NO-DISCOUNT', angle: 'none' }
 ];
 
-const shopTrustPoints = [
-  { stage: '01', title: 'Pick', detail: 'Choose cake, size, price.' },
-  { stage: '02', title: 'Request', detail: 'Send pickup window and notes.' },
-  { stage: '03', title: 'Confirm', detail: 'Bakery checks details before fulfillment.' }
-];
-
 const occasionTiles = [
-  { title: 'Birthday table', detail: 'Honey and Milk Maiden are gentle crowd-pleasers for family celebrations.', tag: 'Birthdays' },
-  { title: 'Office share', detail: 'Napoleon cuts clean, travels well, and feels special without a custom build.', tag: 'Work treats' },
-  { title: 'Gift moment', detail: 'Pistachio Roll brings brighter flavor when you want the cake to feel like a present.', tag: 'Gifts' }
+  { title: 'Birthday table', detail: 'Honey and Milk Maiden are gentle crowd-pleasers for family celebrations.', tag: 'Birthdays', icon: '🎂' },
+  { title: 'Office share', detail: 'Napoleon cuts clean, travels well, and feels special without a custom build.', tag: 'Work treats', icon: '🍰' },
+  { title: 'Gift moment', detail: 'Pistachio Roll brings brighter flavor when you want the cake to feel like a present.', tag: 'Gifts', icon: '🎁' }
 ];
 
 const landingHighlights = [
@@ -45,12 +39,16 @@ const landingHighlights = [
 const fallbackBusinessProfile: BusinessProfile = {
   brand: 'HappyCake',
   locality: 'Sugar Land, Texas',
-  instagram: { handle: '@happycake.us', url: 'https://www.instagram.com/happycake.us/', label: 'Instagram' },
+  instagram: { handle: '@happycake.us', url: 'https://www.instagram.com/happycake.us/', label: 'Instagram', posts: [
+    { title: 'Latest reel', url: 'https://www.instagram.com/happycake.us/reel/DWVzB3_GOJ_/', note: 'Open on Instagram' },
+    { title: 'Cake reel', url: 'https://www.instagram.com/reel/DXNImvmki_N/', note: 'Open on Instagram' },
+    { title: 'Bakery reel', url: 'https://www.instagram.com/reel/DXGdcJNjqxs/', note: 'Open on Instagram' }
+  ] },
   googleMaps: { label: 'Happy Cake on Google Maps', searchUrl: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', status: 'google_maps_limited_view_verified', address: '350 Promenade Wy #500, Sugar Land, TX 77478', phone: '(281) 979-8320', website: 'happycake.us', plusCode: 'J952+JW Sugar Land, Texas', ownerPost: 'Every celebration deserves a cake made just for them.' },
   reviews: { source: 'Google Maps limited view', status: 'rating_visible_review_text_limited', summary: 'Google Maps shows Happy Cake as a 4.7-star cake shop. Open Maps for the latest public review text.', rating: 4.7, countLabel: 'Google rating', items: [
-    { label: 'Cake shop', rating: 4.7, text: '4.7-star public Google Maps rating.' },
-    { label: 'Local proof', rating: 4.7, text: 'Address, phone, website, and recent local post are visible on Google Maps.' },
-    { label: 'Fresh check', rating: 4.7, text: 'Latest review text stays on Google Maps to avoid stale or fake quotes.' }
+    { label: 'Latest Google review', rating: 4.7, text: 'Open the newest public review on Google Maps.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX' },
+    { label: 'Recent Google review', rating: 4.7, text: 'See the latest customer notes directly on Maps.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX' },
+    { label: 'More Google reviews', rating: 4.7, text: 'Read more public Google reviews for Happy Cake.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX' }
   ] },
   agentReadable: { llmsTxt: '/llms.txt', manifest: '/agent-manifest.json', catalog: '/data/products.json', assistant: '/api/assistant' }
 };
@@ -120,7 +118,6 @@ export default function App() {
   const [birthdayStatus, setBirthdayStatus] = useState('');
   const [birthdayLoading, setBirthdayLoading] = useState(false);
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile>(fallbackBusinessProfile);
-  const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{ role: 'assistant', text: 'Hi — ask me about cakes, serving size, pickup request details, or which cake fits your occasion.' }]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -417,46 +414,37 @@ export default function App() {
 
       <section className="landingSection occasionSection">
         <div className="sectionHeader"><div><p className="eyebrow">Occasions</p><h2>Pick by moment, not just flavor.</h2></div><p>Borrowed from the best cake storefronts: shoppers need fast paths for birthdays, gifts, and office tables.</p></div>
-        <div className="occasionGrid">{occasionTiles.map(tile => <article key={tile.title}><span>{tile.tag}</span><b>{tile.title}</b><p>{tile.detail}</p></article>)}</div>
-      </section>
-
-      <section className="landingSection confidenceSection visualFlow">
-        <div className="confidenceCopy motionCopy"><p className="eyebrow">How ordering works</p><h2>Three calm steps.</h2><p>Less reading, more orientation: pick the cake, send the request, then wait for bakery confirmation.</p></div>
-        <div className="motionStack" aria-label="Animated order flow">
-          {shopTrustPoints.map((point, i) => <article key={point.title} style={{ '--step-delay': `${i * 160}ms` } as CSSProperties}><span>{point.stage}</span><b>{point.title}</b><p>{point.detail}</p></article>)}
-          <i className="pulsePath" aria-hidden="true" />
-        </div>
+        <div className="occasionGrid">{occasionTiles.map(tile => <article key={tile.title}><i className="occasionIcon" aria-hidden="true">{tile.icon}</i><span>{tile.tag}</span><b>{tile.title}</b><p>{tile.detail}</p></article>)}</div>
       </section>
 
       <section className="landingSection connectSection" id="connect">
-        <div className="connectCard socialCard visualCard">
-          <p className="eyebrow">Instagram + location</p>
-          <h2>See cakes. Then get there.</h2>
-          <div className="mapVisual" aria-hidden="true"><span className="mapPin">HappyCake</span><i /><b>350 Promenade Wy #500</b></div>
-          <div className="connectActions">
-            <a className="primary" href={businessProfile.instagram.url} target="_blank" rel="noreferrer">Instagram {businessProfile.instagram.handle}</a>
-            <a className="secondary" href={businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer">Open Google Maps</a>
+        <div className="connectCard socialCard instagramCard">
+          <p className="eyebrow">Instagram</p>
+          <h2>Latest posts from {businessProfile.instagram.handle}.</h2>
+          <div className="postGrid">
+            {(businessProfile.instagram.posts || []).map((post, i) => <a className="instaPost" href={post.url} target="_blank" rel="noreferrer" key={post.url}><span>0{i + 1}</span><b>{post.title}</b><small>{post.note}</small></a>)}
           </div>
         </div>
         <div className="connectCard reviewCard visualCard">
-          <p className="eyebrow">Google rating</p>
+          <p className="eyebrow">Google ratings</p>
           <div className="ratingHero"><strong>{businessProfile.reviews.rating || 4.7}</strong><span>★★★★★</span><em>{businessProfile.reviews.countLabel}</em></div>
-          <div className="reviewOrbit">{businessProfile.reviews.items.map(item => <article key={item.label}><b>{item.label}</b><p>{item.text}</p></article>)}</div>
-          <small className="sourceLine">From Google Maps limited view. Review text opens live on Maps.</small>
+          <div className="reviewOrbit">{businessProfile.reviews.items.slice(0, 3).map(item => <a href={item.url || businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer" key={item.label}><b>{item.label}</b><p>{item.text}</p><small>Open review</small></a>)}</div>
         </div>
         <div className="connectCard chatCard visualCard">
-          <div className="sectionHeader compact"><div><p className="eyebrow">Onsite helper</p><h2>Ask HappyCake AI.</h2></div><button className="linkButton" onClick={() => setChatOpen(!chatOpen)}>{chatOpen ? 'Close' : 'Open chat'}</button></div>
+          <div className="sectionHeader compact"><div><p className="eyebrow">Onsite helper</p><h2>Ask HappyCake AI.</h2></div></div>
           <div className="miniChat phoneMock">
-            {chatOpen ? <>
-              <div className="chatMessages">{chatMessages.map((message, i) => <p className={message.role} key={`${message.role}-${i}`}><span>{message.text}</span></p>)}</div>
-              <div className="chatInput"><input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') submitChatMessage(); }} placeholder="Ask which cake fits 12 people…" /><button onClick={submitChatMessage} disabled={chatLoading || !chatInput.trim()}>{chatLoading ? 'Asking…' : 'Send'}</button></div>
-            </> : <p>Ask cake fit, serving size, pickup notes, or discount flow.</p>}
+            <div className="chatMessages">{chatMessages.map((message, i) => <p className={message.role} key={`${message.role}-${i}`}><span>{message.text}</span></p>)}</div>
+            <div className="chatInput"><input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') submitChatMessage(); }} placeholder="Ask which cake fits 12 people…" /><button onClick={submitChatMessage} disabled={chatLoading || !chatInput.trim()}>{chatLoading ? 'Asking…' : 'Send'}</button></div>
           </div>
         </div>
         <div className="connectCard detailsCard visualCard">
           <p className="eyebrow">Quick details</p>
           <h2>Everything useful, no clutter.</h2>
-          <ul><li>{businessProfile.googleMaps.address}</li><li>{businessProfile.googleMaps.phone || '(281) 979-8320'}</li><li>{businessProfile.googleMaps.website}</li></ul>
+          <ul>
+            <li><a href={businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer">{businessProfile.googleMaps.address}</a></li>
+            <li><a href="tel:+12819798320">{businessProfile.googleMaps.phone || '(281) 979-8320'}</a></li>
+            <li><a href={`https://${businessProfile.googleMaps.website}`} target="_blank" rel="noreferrer">{businessProfile.googleMaps.website}</a></li>
+          </ul>
         </div>
       </section>
 
