@@ -13,17 +13,39 @@ function shopMarkup() {
   return source.slice(start, end);
 }
 
-describe('public contact, reviews, and agent-readable surfaces', () => {
-  it('adds Instagram, assistant chat, Google review/location, and machine-readable entry points to the buyer page', () => {
+describe('public contact, reviews, and shopper helper surfaces', () => {
+  it('adds Instagram, assistant chat, and Google review/location proof to the buyer page', () => {
     const shop = shopMarkup();
 
     expect(shop).toContain('Instagram');
     expect(shop).toContain('Ask HappyCake AI');
-    expect(shop).toContain('Google review');
-    expect(shop).toContain('Open map');
-    expect(shop).toContain('For shopping agents');
-    expect(shop).toContain('/llms.txt');
-    expect(shop).toContain('/agent-manifest.json');
+    expect(shop).toContain('Google rating');
+    expect(shop).toContain('4.7');
+    expect(shop).toContain('350 Promenade Wy #500');
+    expect(shop).toContain('(281) 979-8320');
+    expect(shop).toContain('Open Google Maps');
+  });
+
+  it('removes agent-readable UI from the public buyer page while keeping machine files public', () => {
+    const shop = shopMarkup();
+
+    expect(shop).not.toMatch(/shopping agents/i);
+    expect(shop).not.toContain('/agent-manifest.json');
+    expect(shop).not.toContain('/llms.txt');
+    expect(existsSync('public/llms.txt')).toBe(true);
+    expect(existsSync('public/agent-manifest.json')).toBe(true);
+  });
+
+  it('turns text-heavy lower blocks into animated visual modules', () => {
+    const source = appSource();
+    const styles = readFileSync('src/web/styles.css', 'utf8');
+    const shop = shopMarkup();
+
+    expect(shop).toContain('visualFlow');
+    expect(shop).toContain('motionStack');
+    expect(shop).toContain('reviewOrbit');
+    expect(styles).toContain('@keyframes floatCake');
+    expect(styles).toContain('@keyframes pulsePath');
   });
 
   it('keeps assistant chat wired to the existing assistant API and channel set to website', () => {
@@ -36,14 +58,17 @@ describe('public contact, reviews, and agent-readable surfaces', () => {
     expect(source).toContain("source: 'happycake-onsite-chat'");
   });
 
-  it('ships public profile and llms.txt so humans and agents can orient themselves', () => {
+  it('ships public profile with Google Maps metadata and llms.txt for direct machine access', () => {
     expect(existsSync('public/data/business-profile.json')).toBe(true);
     expect(existsSync('public/llms.txt')).toBe(true);
 
     const profile = JSON.parse(readFileSync('public/data/business-profile.json', 'utf8'));
     expect(profile.brand).toBe('HappyCake');
     expect(profile.instagram.url).toMatch(/^https:\/\/www\.instagram\.com\//);
-    expect(profile.googleMaps.searchUrl).toContain('google.com/maps/search');
+    expect(profile.googleMaps.searchUrl).toContain('google.com/maps');
+    expect(profile.googleMaps.address).toContain('350 Promenade Wy #500');
+    expect(profile.googleMaps.phone).toBe('(281) 979-8320');
+    expect(profile.reviews.rating).toBe(4.7);
     expect(profile.reviews.source).toMatch(/google/i);
 
     const llms = readFileSync('public/llms.txt', 'utf8');

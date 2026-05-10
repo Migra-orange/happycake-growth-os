@@ -27,7 +27,6 @@ describe('public shop copy', () => {
     expect(customerFacing).not.toMatch(/Growth OS/i);
     expect(customerFacing).not.toMatch(/whole cake funnel/i);
     expect(customerFacing).not.toMatch(/cold demand/i);
-    expect(customerFacing).not.toMatch(/Google Maps/i);
     expect(customerFacing).not.toMatch(/owner/i);
     expect(customerFacing).not.toMatch(/Sandbox proof/i);
     expect(customerFacing).not.toMatch(/\bPOS\b/);
@@ -54,7 +53,7 @@ describe('public shop copy', () => {
     expect(shop).toContain('Best sellers');
     expect(shop).toContain('Pick by moment, not just flavor.');
     expect(shop).toContain('How ordering works');
-    expect(shop).toContain('Request first. Confirmation before commitment.');
+    expect(shop).toContain('Three calm steps.');
     expect(shop).toContain('Spin for a discount');
     expect(source).not.toContain('setTimeout(() => { if (!seen && !ownerRoute) setWheelOpen(true); }');
   });
