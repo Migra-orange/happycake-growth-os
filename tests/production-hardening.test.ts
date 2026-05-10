@@ -188,6 +188,7 @@ describe('production hardening gates', () => {
     expect(dashboard).toContain('executedSideEffects: authenticated ? item.executedSideEffects : []');
     expect(dashboard).toContain('const ownerAuthenticated = hasOwnerToken(req)');
     expect(app).toContain('fetch(`${API}/api/owner/dashboard`, { headers: ownerHeaders(tokenOverride) })');
+    expect(app).toContain("item.status === 'pending' && ownerToken.trim()");
   });
 
   it('uses non-customer public queue labels that distinguish pending approvals from follow-up work', () => {
