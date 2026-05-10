@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import type { AssistantResponse } from '../shared/schema';
 
 type Product = { id:string; name:string; shortName:string; priceUsd:number; weight:string; serves:string; availabilityPolicy:string; tags:string[]; image:string; description:string };
-type BusinessProfile = { brand:string; locality:string; instagram:{ handle:string; url:string; label:string; posts:{ title:string; url:string; note:string }[] }; googleMaps:{ label:string; searchUrl:string; status:string; address:string; phone:string; website:string; plusCode:string; ownerPost?:string }; reviews:{ source:string; status:string; summary:string; rating:number; countLabel:string; items:{ label:string; text:string; rating:number; url:string }[] }; agentReadable:{ llmsTxt:string; manifest:string; catalog:string; assistant:string } };
+type BusinessProfile = { brand:string; locality:string; instagram:{ handle:string; url:string; label:string; posts:{ title:string; url:string; note:string; image?:string }[] }; googleMaps:{ label:string; searchUrl:string; status:string; address:string; phone:string; website:string; plusCode:string; ownerPost?:string }; reviews:{ source:string; status:string; summary:string; rating:number; countLabel:string; items:{ label:string; text:string; rating:number; url:string; source?:string }[] }; agentReadable:{ llmsTxt:string; manifest:string; catalog:string; assistant:string } };
 
 declare global {
   interface Window { instgrm?: { Embeds?: { process: () => void } } }
@@ -44,15 +44,15 @@ const fallbackBusinessProfile: BusinessProfile = {
   brand: 'HappyCake',
   locality: 'Sugar Land, Texas',
   instagram: { handle: '@happycake.us', url: 'https://www.instagram.com/happycake.us/', label: 'Instagram', posts: [
-    { title: 'Latest reel', url: 'https://www.instagram.com/reel/DWVzB3_GOJ_/', note: 'Open on Instagram' },
-    { title: 'Cake reel', url: 'https://www.instagram.com/reel/DXNImvmki_N/', note: 'Open on Instagram' },
-    { title: 'Bakery reel', url: 'https://www.instagram.com/reel/DXGdcJNjqxs/', note: 'Open on Instagram' }
+    { title: 'Strawberry cream cake', url: 'https://www.instagram.com/happycake.us/', image: '/assets/social/happy-cake-social-03.webp', note: 'From @happycake.us' },
+    { title: 'Chocolate layer cake', url: 'https://www.instagram.com/happycake.us/', image: '/assets/social/happy-cake-social-04.webp', note: 'From @happycake.us' },
+    { title: 'Honey cake slice', url: 'https://www.instagram.com/happycake.us/', image: '/assets/social/happy-cake-social-07.webp', note: 'From @happycake.us' }
   ] },
   googleMaps: { label: 'Happy Cake on Google Maps', searchUrl: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', status: 'google_maps_limited_view_verified', address: '350 Promenade Wy #500, Sugar Land, TX 77478', phone: '(281) 979-8320', website: 'happycake.us', plusCode: 'J952+JW Sugar Land, Texas', ownerPost: 'Every celebration deserves a cake made just for them.' },
-  reviews: { source: 'Google Maps limited view', status: 'rating_visible_review_text_limited', summary: 'Google Maps shows Happy Cake as a 4.7-star cake shop. Open Maps for the latest public review text.', rating: 4.7, countLabel: 'Google rating', items: [
-    { label: 'Latest Google review', rating: 4.7, text: 'Open the newest public review on Google Maps.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX' },
-    { label: 'Recent Google review', rating: 4.7, text: 'See the latest customer notes directly on Maps.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX' },
-    { label: 'More Google reviews', rating: 4.7, text: 'Read more public Google reviews for Happy Cake.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX' }
+  reviews: { source: 'Google Maps + public web snippets checked May 2026', status: 'google_rating_visible_review_text_limited_public_snippets_used', summary: 'Google Maps currently exposes the 4.7 rating in limited view; public review snippets add specific customer language below.', rating: 4.7, countLabel: 'Google rating · public snippets', items: [
+    { label: 'Google Maps rating', rating: 4.7, text: 'Happy Cake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.', url: 'https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX', source: 'Google Maps limited view' },
+    { label: 'Local public review', rating: 5, text: '“Phenomenal cakes and service. Highly recommended.”', url: 'https://local.yahoo.com/info-238808884-happy-cake-sugar-land', source: 'Yahoo Local snippet' },
+    { label: 'Houston food creator note', rating: 5, text: '“Cake slices start at $8+. Highly recommend: Honey Cake Slice.”', url: 'https://www.tiktok.com/discover/happy-cake-sugar-land', source: 'TikTok public snippet' }
   ] },
   agentReadable: { llmsTxt: '/llms.txt', manifest: '/agent-manifest.json', catalog: '/data/products.json', assistant: '/api/assistant' }
 };
@@ -86,34 +86,22 @@ function cleanShopperText(text = '') {
     .replace(/MCP/gi, 'system');
 }
 
-function InstagramEmbed({ post }: { post: BusinessProfile['instagram']['posts'][number] }) {
-  useEffect(() => {
-    const scriptId = 'instagram-embed-script';
-    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
-    if (!existing) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.async = true;
-      script.src = 'https://www.instagram.com/embed.js';
-      script.onload = () => window.instgrm?.Embeds?.process();
-      document.body.appendChild(script);
-    } else {
-      window.instgrm?.Embeds?.process();
-    }
-  }, [post.url]);
-
+function InstagramShot({ post }: { post: BusinessProfile['instagram']['posts'][number] }) {
   return (
-    <article className="instaPost">
-      <blockquote
-        className="instagram-media"
-        data-instgrm-captioned
-        data-instgrm-permalink={post.url}
-        data-instgrm-version="14"
-      >
-        <a href={post.url} target="_blank" rel="noreferrer">{post.title} — {post.note}</a>
-      </blockquote>
-    </article>
+    <a className="instaPost instaShot" href={post.url} target="_blank" rel="noreferrer" aria-label={`Open ${post.title} on Instagram`}>
+      <div className="instaChrome">
+        <span className="avatar">HC</span>
+        <div><b>{post.title}</b><small>{businessHandle(post.note)}</small></div>
+        <em>•••</em>
+      </div>
+      {post.image && <img src={post.image} alt={`${post.title} from ${post.note}`} loading="lazy" />}
+      <div className="instaMeta"><span>♡</span><span>💬</span><span>↗</span><small>{post.note}</small></div>
+    </a>
   );
+}
+
+function businessHandle(note = '') {
+  return note.replace('From ', '') || '@happycake.us';
 }
 
 export default function App() {
@@ -456,13 +444,13 @@ export default function App() {
           <p className="eyebrow">Instagram</p>
           <h2>Latest posts from {businessProfile.instagram.handle}.</h2>
           <div className="postGrid">
-            {(businessProfile.instagram.posts || []).map(post => <InstagramEmbed post={post} key={post.url} />)}
+            {(businessProfile.instagram.posts || []).map(post => <InstagramShot post={post} key={`${post.title}-${post.image || post.url}`} />)}
           </div>
         </div>
         <div className="connectCard reviewCard visualCard">
           <p className="eyebrow">Google ratings</p>
           <div className="ratingHero"><strong>{businessProfile.reviews.rating || 4.7}</strong><span>★★★★★</span><em>{businessProfile.reviews.countLabel}</em></div>
-          <div className="reviewOrbit">{businessProfile.reviews.items.slice(0, 3).map(item => <a href={item.url || businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer" key={item.label}><b>{item.label}</b><p>{item.text}</p><small>Open review</small></a>)}</div>
+          <div className="reviewOrbit">{businessProfile.reviews.items.slice(0, 3).map(item => <a href={item.url || businessProfile.googleMaps.searchUrl} target="_blank" rel="noreferrer" key={item.label}><b>{item.label}</b><p>{item.text}</p><small>{item.source || 'Open review'}</small></a>)}</div>
         </div>
         <div className="connectCard chatCard visualCard">
           <div className="sectionHeader compact"><div><p className="eyebrow">Onsite helper</p><h2>Ask HappyCake AI.</h2></div></div>

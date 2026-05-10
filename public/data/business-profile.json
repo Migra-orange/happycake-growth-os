@@ -7,19 +7,22 @@
     "label": "Instagram",
     "posts": [
       {
-        "title": "Latest reel",
-        "url": "https://www.instagram.com/reel/DWVzB3_GOJ_/",
-        "note": "Open on Instagram"
+        "title": "Strawberry cream cake",
+        "url": "https://www.instagram.com/happycake.us/",
+        "image": "/assets/social/happy-cake-social-03.webp",
+        "note": "From @happycake.us"
       },
       {
-        "title": "Cake reel",
-        "url": "https://www.instagram.com/reel/DXNImvmki_N/",
-        "note": "Open on Instagram"
+        "title": "Chocolate layer cake",
+        "url": "https://www.instagram.com/happycake.us/",
+        "image": "/assets/social/happy-cake-social-04.webp",
+        "note": "From @happycake.us"
       },
       {
-        "title": "Bakery reel",
-        "url": "https://www.instagram.com/reel/DXGdcJNjqxs/",
-        "note": "Open on Instagram"
+        "title": "Honey cake slice",
+        "url": "https://www.instagram.com/happycake.us/",
+        "image": "/assets/social/happy-cake-social-07.webp",
+        "note": "From @happycake.us"
       }
     ]
   },
@@ -34,29 +37,32 @@
     "ownerPost": "Every celebration deserves a cake made just for them."
   },
   "reviews": {
-    "source": "Google Maps limited view",
-    "status": "rating_visible_review_text_limited",
-    "summary": "Google Maps shows Happy Cake as a 4.7-star cake shop. Open Maps for the latest public review text.",
+    "source": "Google Maps + public web snippets checked May 2026",
+    "status": "google_rating_visible_review_text_limited_public_snippets_used",
+    "summary": "Google Maps currently exposes the 4.7 rating in limited view; public review snippets add specific customer language below.",
     "rating": 4.7,
-    "countLabel": "Google rating",
+    "countLabel": "Google rating · public snippets",
     "items": [
       {
-        "label": "Latest Google review",
+        "label": "Google Maps rating",
         "rating": 4.7,
-        "text": "Open the newest public review on Google Maps.",
-        "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX"
+        "text": "Happy Cake is listed on Google Maps with a 4.7-star rating for the Sugar Land cake shop.",
+        "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX",
+        "source": "Google Maps limited view"
       },
       {
-        "label": "Recent Google review",
-        "rating": 4.7,
-        "text": "See the latest customer notes directly on Maps.",
-        "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX"
+        "label": "Local public review",
+        "rating": 5,
+        "text": "“Phenomenal cakes and service. Highly recommended.”",
+        "url": "https://local.yahoo.com/info-238808884-happy-cake-sugar-land",
+        "source": "Yahoo Local snippet"
       },
       {
-        "label": "More Google reviews",
-        "rating": 4.7,
-        "text": "Read more public Google reviews for Happy Cake.",
-        "url": "https://www.google.com/maps/search/Happy+Cake+Sugar+Land+TX"
+        "label": "Houston food creator note",
+        "rating": 5,
+        "text": "“Cake slices start at $8+. Highly recommend: Honey Cake Slice.”",
+        "url": "https://www.tiktok.com/discover/happy-cake-sugar-land",
+        "source": "TikTok public snippet"
       }
     ]
   },
