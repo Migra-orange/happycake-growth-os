@@ -1,80 +1,50 @@
 {
-  "timestamp": "2026-05-10T11:21:56.006016Z",
   "base": "https://happycake-growth-os.vercel.app",
-  "assistant": {
-    "httpStatus": 200,
-    "usedFallback": false,
-    "mode": "live",
-    "mcpSources": [
-      "mcp"
-    ],
-    "requiredApprovalCount": 1,
-    "actionTypes": [
-      "lead_received",
-      "mcp_tool_called",
-      "mcp_tool_called",
-      "mcp_tool_called",
-      "mcp_tool_called",
-      "source_checked",
-      "order_intent_created",
-      "owner_approval_requested",
-      "customer_reply_sent"
-    ],
-    "executedBeforeApproval": false
-  },
-  "pendingApproval": {
-    "approvalId": "own_mozonnjq",
-    "intentId": "intent_mozonnjq",
-    "status": "pending",
-    "executedSideEffects": null
-  },
-  "ownerActionUnauth": {
-    "httpStatus": 401,
-    "error": "owner_auth_required"
-  },
-  "approvedSynthetic": {
-    "httpStatus": 200,
-    "ok": true,
-    "approvalStatus": "approved",
-    "executedSideEffects": [
-      "marketing_report_to_owner",
-      "square_create_order",
-      "kitchen_create_ticket"
-    ],
-    "mcpSources": [
-      "mcp"
-    ],
-    "mcpTools": [
-      "marketing_report_to_owner",
-      "square_create_order",
-      "kitchen_create_ticket"
-    ],
-    "idempotentReplay": false
-  },
-  "commit": "839ab21",
-  "deploymentAlias": "https://happycake-growth-os.vercel.app",
-  "browserQa": {
-    "buyer": {
-      "consoleErrors": 0,
-      "forbiddenInternalTerms": [],
-      "hasCakeBuyerHero": true
+  "summary": {
+    "approved_synthetic": {
+      "executedSideEffects": null,
+      "mcpSources": [],
+      "reply": null,
+      "status": 502
     },
-    "ownerHashRoute": {
-      "url": "/#owner/dashboard",
-      "consoleErrors": 0,
-      "visible": true,
-      "liveSandboxConnected": true,
-      "checksGreen": "3/3",
-      "storageMode": "vercel_blob",
-      "screenshot": "/Users/didarmacmini/.hermes/cache/screenshots/browser_screenshot_455c7125da484699a9529796e732e6fd.png"
-    }
+    "assistant": {
+      "approvalStatus": "pending",
+      "claudeCliProductionExecuted": false,
+      "mcpSources": [
+        "mcp"
+      ],
+      "mode": "live",
+      "productionRuntime": "vercel_serverless_mcp_demo",
+      "runtime": null,
+      "status": 200,
+      "usedFallback": false
+    },
+    "health_ok": true,
+    "mcp_audit": {
+      "failures": [],
+      "ok": true,
+      "usedFallback": false
+    },
+    "mcp_smoke": {
+      "ok": true,
+      "source": "mcp",
+      "usedFallback": false
+    },
+    "owner_config": {
+      "durableConfigured": true,
+      "ownerAuthEnabled": true,
+      "storageMode": "vercel_blob"
+    },
+    "owner_dashboard": {
+      "agents": 7,
+      "mcpSources": [
+        "mcp"
+      ],
+      "mode": "live",
+      "storageMode": "vercel_blob"
+    },
+    "unauthorized_owner_action_status": 401
   },
-  "runTodo": [
-    "Audit docs/repo/production with specialist agents",
-    "Fix highest-impact judge blocker: documented owner hash route",
-    "Run local build/test/verify/secrets gates",
-    "Commit, push, deploy production",
-    "Re-run live MCP/approval/browser proof"
-  ],
-  "updatedAt": "2026-05-10T11:22:51.707754Z"
+  "syntheticApprovalId": "own_mozqxeou",
+  "timestamp": "2026-05-10T12:25:25Z"
 }
