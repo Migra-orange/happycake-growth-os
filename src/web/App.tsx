@@ -270,7 +270,7 @@ export default function App() {
       </section>
 
       <section className="catalogSection" id="catalog">
-        <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Classic cakes, priced clearly.</h2></div><p>Pickup time and availability still get owner confirmation before the promise goes out.</p></div>
+        <div className="sectionHeader"><div><p className="eyebrow">Menu</p><h2>Classic cakes, priced clearly.</h2></div><p>Pickup time and availability still get bakery confirmation before the promise goes out.</p></div>
         <div className="catalogGrid">{products.map((p, i) => <article className={`cakeCard cakeCard${i}`} key={p.id}>
           <button className="photoButton" onClick={() => startOrder(p)}><img src={p.image} alt={p.name}/><span>{p.tags[0]}</span></button>
           <div className="cakeInfo"><div><h3>{p.name}</h3><p>{p.description}</p></div><div className="cakeMeta"><b>${p.priceUsd}</b><span>{p.weight} · {p.serves}</span></div><button className="orderButton" onClick={() => startOrder(p)}>Order this cake</button></div>

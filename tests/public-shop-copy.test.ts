@@ -18,7 +18,7 @@ describe('public shop copy', () => {
     expect(shop).not.toMatch(/whole cake funnel/i);
     expect(shop).not.toMatch(/cold demand/i);
     expect(shop).not.toMatch(/Google Maps/i);
-    expect(shop).not.toMatch(/owner queue/i);
+    expect(shop).not.toMatch(/owner/i);
     expect(shop).not.toMatch(/Sandbox proof/i);
     expect(shop).not.toMatch(/\bPOS\b/);
   });
